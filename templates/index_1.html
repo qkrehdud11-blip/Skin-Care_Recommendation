@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="피부 고민과 프로필을 분석해 맞춤 성분과 케어 솔루션을 추천합니다.">
+  <title>DEW:ME | 나를 위한 스킨케어 가이드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_1.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="DEW:ME 홈"><span class="brand-mark" aria-hidden="true"></span><span>DEW:ME</span></a>
+      <p class="header-note">Personal skin guide</p>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span></span> AI SKIN CONSULTATION</p>
+          <h1>오늘의 피부에<br><em>꼭 맞는 케어</em>를 찾아보세요.</h1>
+          <p class="hero-description">피부 타입과 고민을 알려주시면, 데이터를 바탕으로 필요한 성분과 피해야 할 성분을 세심하게 분석해 드려요.</p>
+          <div class="trust-list" aria-label="서비스 특징"><span>개인 맞춤 분석</span><span>성분 중심 추천</span><span>간편한 1분 진단</span></div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
+          <div class="leaf leaf-one"></div><div class="leaf leaf-two"></div>
+          <div class="product-bottle bottle-back"><span class="bottle-cap"></span><span class="bottle-label">DEW<br>ESSENCE</span></div>
+          <div class="product-bottle bottle-front"><span class="bottle-pump"></span><span class="bottle-label">DAILY<br>SKIN</span><small>calm &amp; balance</small></div>
+          <span class="art-caption">Clean beauty, clear choice.</span>
+        </div>
+      </section>
+
+      <section class="consultation-card" aria-labelledby="consultation-title">
+        <div class="card-heading">
+          <div><p class="step-label">STEP 01</p><h2 id="consultation-title">나의 피부 프로필</h2></div>
+          <p>정확한 추천을 위해 해당하는 항목을 선택해 주세요.</p>
+        </div>
+        <form id="recommend-form">
+          <div class="profile-grid">
+            <label class="field"><span class="field-label">성별</span><span class="select-wrap"><select id="gender" name="gender"><option value="성별 선택">선택 안 함</option><option value="여성">여성</option><option value="남성">남성</option></select></span></label>
+            <label class="field"><span class="field-label">연령대</span><span class="select-wrap"><select id="age" name="age"><option value="연령대 선택">선택 안 함</option><option value="20대">20대</option><option value="30대">30대</option><option value="40대">40대</option><option value="50대 이상">50대 이상</option></select></span></label>
+            <label class="field"><span class="field-label">피부 타입</span><span class="select-wrap"><select id="skin_type" name="skin_type"><option value="피부 타입 선택">선택 안 함</option><option value="건성">건성</option><option value="지성">지성</option><option value="복합성">복합성</option><option value="정상">정상</option></select></span></label>
+          </div>
+          <div class="concern-area">
+            <label for="keyword"><span class="field-label">요즘 가장 신경 쓰이는 피부 고민</span><span class="optional">자유롭게 적어주세요</span></label>
+            <div class="input-row">
+              <input type="text" id="keyword" name="keyword" autocomplete="off" placeholder="예: 피부가 건조하고 화장이 자주 떠요">
+              <button id="btn-recommend" type="submit"><span>나의 솔루션 보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+            </div>
+            <div class="keyword-suggestions" aria-label="추천 검색어"><span>이런 고민은 어때요?</span><button type="button" data-keyword="피부가 건조하고 각질이 생겨요">건조·각질</button><button type="button" data-keyword="피부 트러블과 여드름이 고민이에요">트러블</button><button type="button" data-keyword="피부가 민감하고 쉽게 붉어져요">민감·홍조</button></div>
+          </div>
+        </form>
+        <div id="loading" class="loading hidden" role="status" aria-live="polite"><div class="spinner"></div><div><strong>피부 데이터를 분석하고 있어요</strong><span>잠시만 기다려 주세요.</span></div></div>
+        <div id="error-box" class="error-box hidden" role="alert"><span class="error-icon">!</span><p id="error-text"></p></div>
+      </section>
+
+      <section id="result-box" class="result-section hidden" aria-labelledby="result-title">
+        <div class="result-heading"><div><p class="step-label">YOUR SKIN REPORT</p><h2 id="result-title">당신을 위한 케어 가이드</h2></div><p id="profile-text" class="profile-badge"></p></div>
+        <div class="result-grid">
+          <article class="solution-card"><span class="card-number">01</span><div class="result-icon solution-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4.2 12.6c.8.6 1.2 1.4 1.2 2.4h6c0-1 .4-1.8 1.2-2.4A7 7 0 0 0 12 3Z"></path><path d="M9.5 21h5M12 3V1M4.2 6.2 2.8 4.8M19.8 6.2l1.4-1.4"></path></svg></div><p class="result-kicker">CARE SOLUTION</p><h3>추천 스킨케어 루틴</h3><p id="response-text" class="response-text"></p></article>
+          <article class="ingredient-card good"><span class="card-number">02</span><div class="result-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21c4-3 7-7 7-11a7 7 0 0 0-14 0c0 4 3 8 7 11Z"></path><path d="M9 11.5 11 14l4-5"></path></svg></div><p class="result-kicker">GOOD FOR YOU</p><h3>주목하면 좋은 성분</h3><p id="rec-text" class="ingredient-text"></p></article>
+          <article class="ingredient-card caution"><span class="card-number">03</span><div class="result-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 19h18.4L12 3Z"></path><path d="M12 9v4M12 16.5v.5"></path></svg></div><p class="result-kicker">CHECK FIRST</p><h3>사용 전 확인할 성분</h3><p id="avoid-text" class="ingredient-text"></p></article>
+        </div>
+        <p class="result-disclaimer">본 결과는 데이터 기반의 일반적인 가이드이며, 의학적 진단을 대신하지 않습니다. 피부 이상이 지속될 경우 전문의와 상담해 주세요.</p>
+      </section>
+    </main>
+
+    <footer><a class="brand footer-brand" href="/">DEW:ME</a><p>Your daily moment for healthy skin.</p><span>AI-based personal skincare guide</span></footer>
+  </div>
+
+  <script>
+    const form = document.getElementById('recommend-form');
+    const keywordInput = document.getElementById('keyword');
+    const submitButton = document.getElementById('btn-recommend');
+    form.addEventListener('submit', function (event) { event.preventDefault(); getRecommendation(); });
+    document.querySelectorAll('[data-keyword]').forEach(function (button) {
+      button.addEventListener('click', function () { keywordInput.value = button.dataset.keyword; keywordInput.focus(); });
+    });
+
+    async function getRecommendation() {
+      const keyword = keywordInput.value.trim();
+      const gender = document.getElementById('gender').value;
+      const age = document.getElementById('age').value;
+      const skinType = document.getElementById('skin_type').value;
+      const noProfile = gender === '성별 선택' && age === '연령대 선택' && skinType === '피부 타입 선택';
+      if (!keyword && noProfile) { showError('피부 고민을 입력하거나 프로필 항목을 하나 이상 선택해 주세요.'); keywordInput.focus(); return; }
+      setLoading(true); hideResult(); hideError();
+      try {
+        const response = await fetch("{{ url_for('recommend') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keyword, gender, age, skin_type: skinType }) });
+        const data = await response.json();
+        if (!response.ok) { showError(data.error || '분석 중 오류가 발생했습니다. 다시 시도해 주세요.'); return; }
+        document.getElementById('profile-text').textContent = data.profile;
+        document.getElementById('response-text').textContent = data.response;
+        document.getElementById('rec-text').textContent = data.rec_ingredients;
+        document.getElementById('avoid-text').textContent = data.avoid_ingredients;
+        const resultBox = document.getElementById('result-box');
+        resultBox.classList.remove('hidden');
+        window.setTimeout(function () { resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+      } catch (error) { showError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'); }
+      finally { setLoading(false); }
+    }
+    function setLoading(isLoading) { document.getElementById('loading').classList.toggle('hidden', !isLoading); submitButton.disabled = isLoading; submitButton.querySelector('span').textContent = isLoading ? '분석 중...' : '나의 솔루션 보기'; }
+    function showError(message) { document.getElementById('error-text').textContent = message; document.getElementById('error-box').classList.remove('hidden'); }
+    function hideResult() { document.getElementById('result-box').classList.add('hidden'); }
+    function hideError() { document.getElementById('error-box').classList.add('hidden'); }
+  </script>
+</body>
+</html>

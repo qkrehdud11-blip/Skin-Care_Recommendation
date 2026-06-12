@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SkinScope 회원가입 및 로그인">
+  <title>{% if mode == 'login' %}로그인{% else %}회원가입{% endif %} | SkinScope</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_3.css') }}">
+</head>
+<body class="auth-page">
+  <main class="auth-shell">
+    <section class="auth-visual">
+      <a class="logo auth-logo" href="{{ url_for('index') }}">
+        <span class="logo-symbol" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 3C9.4 3 5 8.1 5 14.5 5 22.2 11 27 16 29c5-2 11-6.8 11-14.5C27 8.1 22.6 3 16 3Z"></path><path d="M10.5 16.5c2.1-5.1 6.4-7.2 11-7.5-1 5.9-4.4 9.8-10.2 11.2"></path></svg></span>
+        <span>Skin<span>Scope</span></span>
+      </a>
+      <div class="auth-copy">
+        <span class="section-kicker">PERSONAL SKIN JOURNEY</span>
+        <h1>{% if mode == 'login' %}다시 만나서<br>반가워요.{% else %}내 피부를 이해하는<br>첫 번째 기록.{% endif %}</h1>
+        <p>{% if mode == 'login' %}저장된 피부 프로필과 이용 기록을 이어서 관리하고 맞춤 분석을 받아보세요.{% else %}프로필을 저장하면 매번 다시 입력하지 않아도 되고, 나에게 맞는 스킨케어 경험을 이어갈 수 있어요.{% endif %}</p>
+      </div>
+      <div class="auth-products" aria-hidden="true">
+        <div class="auth-leaf"></div>
+        <div class="auth-bottle"><span></span><b>SKIN<br>SCOPE</b><small>daily care</small></div>
+        <div class="auth-jar"><span></span><b>CALM</b><small>skin cream</small></div>
+      </div>
+      <p class="auth-quote">Care begins with knowing your skin.</p>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-panel-inner">
+        <a class="back-link" href="{{ url_for('index') }}">← 홈으로 돌아가기</a>
+        <div class="auth-heading">
+          <p>{% if mode == 'login' %}WELCOME BACK{% else %}CREATE ACCOUNT{% endif %}</p>
+          <h2>{% if mode == 'login' %}로그인{% else %}회원가입{% endif %}</h2>
+          <span>{% if mode == 'login' %}계정 정보를 입력해 주세요.{% else %}기본 정보와 피부 프로필을 입력해 주세요.{% endif %}</span>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}<div class="auth-messages">{% for category, message in messages %}<div class="flash-message {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+        {% endwith %}
+
+        <form class="auth-form" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% if mode == 'register' %}
+            <div class="auth-row">
+              <label><span>이름</span><input type="text" name="name" minlength="2" maxlength="30" value="{{ request.form.get('name', '') }}" autocomplete="name" placeholder="이름" required></label>
+              <label><span>아이디</span><input type="text" name="username" minlength="4" maxlength="20" value="{{ request.form.get('username', '') }}" autocomplete="username" placeholder="영문 소문자, 숫자" required></label>
+            </div>
+            <label><span>이메일</span><input type="email" name="email" value="{{ request.form.get('email', '') }}" autocomplete="email" placeholder="name@example.com" required></label>
+          {% else %}
+            <label><span>아이디</span><input type="text" name="username" autocomplete="username" placeholder="아이디를 입력하세요" required autofocus></label>
+          {% endif %}
+
+          <div class="auth-row">
+            <label><span>비밀번호</span><span class="password-field"><input type="password" name="password" minlength="8" autocomplete="{% if mode == 'login' %}current-password{% else %}new-password{% endif %}" placeholder="영문 + 숫자, 8자 이상" required><button class="password-toggle" type="button" aria-label="비밀번호 보기">보기</button></span></label>
+            {% if mode == 'register' %}<label><span>비밀번호 확인</span><span class="password-field"><input type="password" name="password_confirm" minlength="8" autocomplete="new-password" placeholder="한 번 더 입력" required><button class="password-toggle" type="button" aria-label="비밀번호 보기">보기</button></span></label>{% endif %}
+          </div>
+
+          {% if mode == 'register' %}
+            <div class="profile-divider"><span>선택 정보</span><p>입력하면 첫 분석에 자동으로 적용돼요.</p></div>
+            <div class="auth-profile-grid">
+              <label><span>성별</span><select name="gender"><option value="">선택 안 함</option><option value="여성">여성</option><option value="남성">남성</option></select></label>
+              <label><span>연령대</span><select name="age"><option value="">선택 안 함</option><option value="20대">20대</option><option value="30대">30대</option><option value="40대">40대</option><option value="50대 이상">50대 이상</option></select></label>
+              <label><span>피부 타입</span><select name="skin_type"><option value="">선택 안 함</option><option value="건성">건성</option><option value="지성">지성</option><option value="복합성">복합성</option><option value="정상">정상</option></select></label>
+            </div>
+          {% endif %}
+
+          <button class="auth-submit" type="submit">{% if mode == 'login' %}로그인하기{% else %}회원가입 완료{% endif %}<span>→</span></button>
+        </form>
+
+        <p class="auth-switch">{% if mode == 'login' %}아직 계정이 없으신가요? <a href="{{ url_for('register') }}">회원가입</a>{% else %}이미 계정이 있으신가요? <a href="{{ url_for('login') }}">로그인</a>{% endif %}</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    document.querySelectorAll('.password-toggle').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const input = button.parentElement.querySelector('input');
+        const visible = input.type === 'text';
+        input.type = visible ? 'password' : 'text';
+        button.textContent = visible ? '보기' : '숨김';
+      });
+    });
+  </script>
+</body>
+</html>
