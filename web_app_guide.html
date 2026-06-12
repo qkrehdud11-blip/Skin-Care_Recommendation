@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>web_app.py 코드 설명서</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Malgun Gothic', 'NanumGothic', sans-serif;
+      background: #F8F9FA;
+      color: #333;
+      line-height: 1.8;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* 제목 */
+    .page-title {
+      text-align: center;
+      padding: 32px;
+      background: linear-gradient(135deg, #81C784, #4CAF50);
+      color: white;
+      border-radius: 20px;
+    }
+    .page-title h1 { font-size: 26px; margin-bottom: 8px; }
+    .page-title p  { font-size: 14px; opacity: 0.9; }
+
+    /* 카드 */
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2E7D32;
+      border-left: 5px solid #81C784;
+      padding-left: 12px;
+      margin-bottom: 18px;
+    }
+
+    /* 코드 블록 */
+    .code-block {
+      background: #1E1E2E;
+      color: #CDD6F4;
+      border-radius: 10px;
+      padding: 18px 20px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13.5px;
+      line-height: 1.9;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 12px 0;
+    }
+
+    /* 코드 색상 강조 */
+    .kw  { color: #CBA6F7; } /* 키워드 */
+    .fn  { color: #89B4FA; } /* 함수/메서드 */
+    .str { color: #A6E3A1; } /* 문자열 */
+    .cm  { color: #6C7086; font-style: italic; } /* 주석 */
+    .num { color: #FAB387; } /* 숫자 */
+    .cls { color: #F9E2AF; } /* 클래스명 */
+
+    /* 설명 박스 */
+    .explain {
+      background: #F1F8E9;
+      border: 1px solid #C5E1A5;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+    .explain b { color: #33691E; }
+
+    /* 비유 박스 */
+    .analogy {
+      background: #FFF8E1;
+      border: 1px solid #FFD54F;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+    .analogy::before {
+      content: "💡 쉽게 말하면: ";
+      font-weight: bold;
+      color: #F57F17;
+    }
+
+    /* 경고/포인트 박스 */
+    .point {
+      background: #E3F2FD;
+      border: 1px solid #90CAF9;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+    .point::before {
+      content: "📌 포인트: ";
+      font-weight: bold;
+      color: #1565C0;
+    }
+
+    /* 흐름도 */
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 14px 0;
+    }
+    .flow-step {
+      background: #E8F5E9;
+      border: 2px solid #81C784;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #2E7D32;
+      text-align: center;
+    }
+    .flow-arrow {
+      font-size: 20px;
+      color: #81C784;
+    }
+
+    /* 줄 설명 테이블 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+    th {
+      background: #E8F5E9;
+      color: #2E7D32;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: bold;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #F0F0F0;
+      vertical-align: top;
+    }
+    tr:hover td { background: #FAFAFA; }
+    td:first-child {
+      font-family: monospace;
+      color: #1565C0;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    h3 { font-size: 15px; color: #555; margin: 16px 0 8px; }
+
+    .section-num {
+      display: inline-block;
+      background: #4CAF50;
+      color: white;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      text-align: center;
+      line-height: 26px;
+      font-size: 13px;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 제목 -->
+  <div class="page-title">
+    <h1>📄 web_app.py 코드 설명서</h1>
+    <p>AI 피부 추천 웹 앱 백엔드 코드를 처음 보는 사람도 이해할 수 있도록 설명합니다.</p>
+  </div>
+
+
+  <!-- ======================= 전체 구조 ======================= -->
+  <div class="card">
+    <p class="card-title">🗺️ 전체 구조 한눈에 보기</p>
+
+    <div class="analogy" style="margin-bottom:14px;">
+      이 파일은 <b>웹 서버</b>를 만드는 코드예요. 사용자가 브라우저에서 "추천 받기" 버튼을 누르면, 이 서버가 질문을 받아서 AI로 분석하고 결과를 돌려줘요. 마치 <b>음식점 주방</b> 같아요 — 손님(브라우저)이 주문(요청)을 하면, 주방(서버)에서 요리(분석)를 해서 음식(결과)을 내보내는 거예요.
+    </div>
+
+    <div class="flow">
+      <div class="flow-step">① 라이브러리 준비</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">② 데이터·모델 로드</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">③ 텍스트 전처리 함수</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">④ 페이지 라우트 (GET /)</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">⑤ 추천 라우트 (POST /recommend)</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">⑥ 응답 조립 함수</div>
+    </div>
+  </div>
+
+
+  <!-- ======================= SECTION 1 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">1</span> 라이브러리 불러오기 (import)</p>
+
+    <div class="code-block"><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> pickle
+<span class="kw">import</span> re
+<span class="kw">from</span> konlpy.tag <span class="kw">import</span> Okt
+<span class="kw">from</span> sklearn.metrics.pairwise <span class="kw">import</span> linear_kernel
+<span class="kw">from</span> scipy.io <span class="kw">import</span> mmread
+<span class="kw">from</span> flask <span class="kw">import</span> Flask, render_template, request, jsonify</div>
+
+    <div class="analogy">
+      <b>import</b>는 "도구를 꺼내 온다"는 뜻이에요. 요리를 하기 전에 칼, 도마, 냄비를 꺼내는 것처럼, 코딩도 필요한 도구(라이브러리)를 먼저 불러와야 해요.
+    </div>
+
+    <table>
+      <tr><th>라이브러리</th><th>하는 일</th></tr>
+      <tr><td>numpy (np)</td><td>숫자 계산을 빠르게 해주는 도구. 이 앱에선 보너스 점수 배열(0으로 채워진 긴 줄)을 만들 때 써요.</td></tr>
+      <tr><td>pandas (pd)</td><td>엑셀처럼 표(CSV 파일)를 읽고 다루는 도구. 9031개의 피부 데이터를 읽어요.</td></tr>
+      <tr><td>pickle</td><td>파이썬 객체를 파일로 저장하거나 불러오는 도구. 미리 학습된 TF-IDF 모델(.pkl 파일)을 불러올 때 써요.</td></tr>
+      <tr><td>re</td><td>정규식(Regular Expression) 도구. 한글만 남기고 나머지(영어, 숫자, 특수문자)를 지울 때 써요.</td></tr>
+      <tr><td>Okt</td><td>한국어 형태소 분석기. "검버섯이 생겼어요" → ["검버섯", "생기다"] 처럼 단어를 쪼개는 역할을 해요.</td></tr>
+      <tr><td>linear_kernel</td><td>두 문장이 얼마나 비슷한지 점수(0~1)를 계산하는 함수예요. (코사인 유사도)</td></tr>
+      <tr><td>mmread</td><td>TF-IDF 행렬 파일(.mtx 형식)을 읽는 도구예요.</td></tr>
+      <tr><td>Flask 등</td><td>웹 서버를 만드는 핵심 도구예요. Flask=서버 틀, render_template=HTML 페이지 반환, request=요청 데이터 읽기, jsonify=JSON 형태로 결과 반환.</td></tr>
+    </table>
+  </div>
+
+
+  <!-- ======================= SECTION 2 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">2</span> Flask 앱 생성 및 데이터·모델 로드</p>
+
+    <div class="code-block">app = <span class="cls">Flask</span>(__name__)
+
+<span class="cm"># 서버 시작 시 데이터 및 모델 한 번만 로드</span>
+<span class="fn">print</span>(<span class="str">"Loading data and models..."</span>)
+df_skin     = pd.<span class="fn">read_csv</span>(<span class="str">'./datasets/skin_data_final.csv'</span>)
+tfidf_matrix = <span class="fn">mmread</span>(<span class="str">'./models/Tfidf_skin_data.mtx'</span>).<span class="fn">tocsr</span>()
+<span class="kw">with</span> <span class="fn">open</span>(<span class="str">'./models/tfidf.pkl'</span>, <span class="str">'rb'</span>) <span class="kw">as</span> f:
+    tfidf = pickle.<span class="fn">load</span>(f)
+okt = <span class="cls">Okt</span>()</div>
+
+    <div class="explain">
+      <b>app = Flask(__name__)</b><br>
+      Flask로 웹 서버를 하나 만들어요. <code>__name__</code>은 "이 파일이 있는 폴더를 기준으로 설정해줘"라는 의미예요.
+    </div>
+
+    <div class="explain">
+      <b>df_skin = pd.read_csv(...)</b><br>
+      피부 고민 데이터가 담긴 CSV 파일을 읽어서 표 형태(DataFrame)로 저장해요. 이 표에는 성별, 연령대, 피부 타입, 질문, 답변 등이 9031행으로 들어 있어요.
+    </div>
+
+    <div class="explain">
+      <b>tfidf_matrix = mmread(...).tocsr()</b><br>
+      미리 계산해 둔 "단어 점수 표"를 불러와요. 9031개 답변 각각이 어떤 단어를 얼마나 많이 쓰는지 수치로 변환해 놓은 거예요. <code>.tocsr()</code>은 이 표를 빠르게 계산할 수 있는 형식으로 바꾸는 것이에요.
+    </div>
+
+    <div class="explain">
+      <b>tfidf = pickle.load(f)</b><br>
+      새로운 문장을 같은 방식의 숫자로 바꿔주는 "번역기 모델"을 불러와요. 이걸 써야 사용자 입력도 9031개 답변과 비교할 수 있는 숫자로 바꿀 수 있어요.
+    </div>
+
+    <div class="analogy">
+      데이터·모델을 서버가 시작할 때 딱 한 번 불러오는 이유: 추천 버튼을 누를 때마다 파일을 다시 읽으면 너무 느려요. 마치 도서관에서 책을 매번 서가에서 꺼내는 것보다, 책상 위에 미리 꺼내 두는 게 빠른 것처럼요.
+    </div>
+  </div>
+
+
+  <!-- ======================= SECTION 3 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">3</span> 불용어 로드</p>
+
+    <div class="code-block"><span class="kw">try</span>:
+    df_stopwords = pd.<span class="fn">read_csv</span>(<span class="str">'../movie_review/datasets/stopwords.csv'</span>)
+    stopwords    = df_stopwords[<span class="str">'stopword'</span>].<span class="fn">tolist</span>()
+<span class="kw">except</span>:
+    stopwords = [<span class="str">'아'</span>, <span class="str">'휴'</span>, <span class="str">'나'</span>, <span class="str">'우리'</span>, <span class="str">'을'</span>, <span class="str">'를'</span>, ...]</div>
+
+    <div class="explain">
+      <b>불용어(stopwords)</b>란 분석에 도움이 되지 않는 단어예요. "아", "나", "을", "를" 같이 의미 없는 단어는 유사도 계산 전에 미리 걸러냅니다.
+    </div>
+
+    <div class="analogy">
+      검색할 때 "나는 여드름이 있어요"를 입력하면, "나는", "이", "있어요"는 중요하지 않고 "여드름"만 중요해요. 불용어 목록은 이런 불필요한 단어들을 모아 놓은 리스트예요.
+    </div>
+
+    <div class="point">
+      <code>try / except</code>는 파일이 없어도 앱이 꺼지지 않게 해줘요. 파일이 없으면 기본 불용어 목록을 대신 사용해요.
+    </div>
+  </div>
+
+
+  <!-- ======================= SECTION 4 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">4</span> 텍스트 전처리 함수 — preprocess_input()</p>
+
+    <div class="code-block"><span class="kw">def</span> <span class="fn">preprocess_input</span>(text):
+    text  = re.<span class="fn">sub</span>(<span class="str">'[^가-힣]'</span>, <span class="str">' '</span>, text)
+    tokens = okt.<span class="fn">pos</span>(text, stem=<span class="kw">True</span>)
+    words  = [w <span class="kw">for</span> w, p <span class="kw">in</span> tokens
+              <span class="kw">if</span> p <span class="kw">in</span> [<span class="str">'Noun'</span>, <span class="str">'Verb'</span>, <span class="str">'Adjective'</span>]
+              <span class="kw">and</span> <span class="fn">len</span>(w) > <span class="num">1</span>
+              <span class="kw">and</span> w <span class="kw">not in</span> stopwords]
+    <span class="kw">return</span> <span class="str">' '</span>.<span class="fn">join</span>(words)</div>
+
+    <div class="analogy">
+      이 함수는 사용자가 입력한 문장을 AI가 이해할 수 있는 "핵심 단어 모음"으로 바꿔 줘요. 마치 독후감에서 핵심 단어만 형광펜으로 표시하는 것처럼요.
+    </div>
+
+    <h3>단계별 설명</h3>
+    <table>
+      <tr><th>단계</th><th>코드</th><th>설명</th><th>예시</th></tr>
+      <tr>
+        <td>1단계</td>
+        <td>re.sub('[^가-힣]', ' ', text)</td>
+        <td>한글이 아닌 모든 글자(영어, 숫자, 특수문자)를 공백으로 바꿔요.</td>
+        <td>"여드름!! oily" → "여드름    "</td>
+      </tr>
+      <tr>
+        <td>2단계</td>
+        <td>okt.pos(text, stem=True)</td>
+        <td>문장을 단어 단위로 쪼개고, 각 단어의 품사(명사/동사/형용사 등)를 알아내요. stem=True는 단어를 기본형으로 바꿔요. ("생겼어요" → "생기다")</td>
+        <td>"검버섯이 생겼어요" → [("검버섯","Noun"), ("생기다","Verb")]</td>
+      </tr>
+      <tr>
+        <td>3단계</td>
+        <td>if p in ['Noun','Verb','Adjective']</td>
+        <td>명사, 동사, 형용사만 남기고 나머지 품사(조사, 어미 등)는 버려요.</td>
+        <td>"을", "이", "는" 같은 조사 제거</td>
+      </tr>
+      <tr>
+        <td>4단계</td>
+        <td>len(w) > 1</td>
+        <td>한 글자짜리 단어는 의미가 너무 모호해서 버려요.</td>
+        <td>"나", "것" 제거</td>
+      </tr>
+      <tr>
+        <td>5단계</td>
+        <td>w not in stopwords</td>
+        <td>불용어 목록에 있는 단어도 버려요.</td>
+        <td>"우리", "저희" 제거</td>
+      </tr>
+      <tr>
+        <td>6단계</td>
+        <td>' '.join(words)</td>
+        <td>남은 단어들을 공백으로 이어 붙여서 하나의 문자열로 만들어요.</td>
+        <td>["검버섯","생기다"] → "검버섯 생기다"</td>
+      </tr>
+    </table>
+  </div>
+
+
+  <!-- ======================= SECTION 5 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">5</span> 메인 페이지 라우트 — GET /</p>
+
+    <div class="code-block">@app.<span class="fn">route</span>(<span class="str">'/'</span>)
+<span class="kw">def</span> <span class="fn">index</span>():
+    <span class="kw">return</span> <span class="fn">render_template</span>(<span class="str">'index.html'</span>)</div>
+
+    <div class="explain">
+      <b>@app.route('/')</b>는 "누군가 http://127.0.0.1:5000/ 주소에 접속하면 아래 함수를 실행해"라는 뜻이에요.<br><br>
+      <b>render_template('index.html')</b>은 <code>templates/</code> 폴더 안의 <code>index.html</code> 파일을 브라우저에 보내줘요.
+    </div>
+
+    <div class="analogy">
+      편의점에 들어가면 직원이 "어서오세요!"라고 하듯이, 브라우저가 주소를 입력하면 서버가 HTML 페이지를 내보내는 거예요.
+    </div>
+  </div>
+
+
+  <!-- ======================= SECTION 6 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">6</span> 추천 라우트 — POST /recommend (핵심!)</p>
+
+    <div class="code-block">@app.<span class="fn">route</span>(<span class="str">'/recommend'</span>, methods=[<span class="str">'POST'</span>])
+<span class="kw">def</span> <span class="fn">recommend</span>():
+    data      = request.<span class="fn">get_json</span>()
+    user_input = data.<span class="fn">get</span>(<span class="str">'keyword'</span>, <span class="str">''</span>).<span class="fn">strip</span>()
+    gender    = data.<span class="fn">get</span>(<span class="str">'gender'</span>,    <span class="str">'성별 선택'</span>)
+    age       = data.<span class="fn">get</span>(<span class="str">'age'</span>,       <span class="str">'연령대 선택'</span>)
+    skin_type = data.<span class="fn">get</span>(<span class="str">'skin_type'</span>, <span class="str">'피부 타입 선택'</span>)</div>
+
+    <div class="explain">
+      브라우저에서 "추천 받기" 버튼을 누르면 이 함수가 실행돼요.<br>
+      <b>request.get_json()</b>으로 브라우저가 보낸 데이터(키워드, 성별, 연령대, 피부 타입)를 꺼내요.<br>
+      <b>.get('keyword', '')</b>에서 두 번째 값 <code>''</code>는 키워드가 없을 때 기본값(빈 문자열)이에요.
+    </div>
+
+    <hr style="margin:20px 0; border-color:#EEE;">
+
+    <h3>📍 경우 1: 키워드 없이 조건만 선택한 경우</h3>
+    <div class="code-block">    <span class="kw">if not</span> user_input:
+        filtered = df_skin.<span class="fn">copy</span>()
+        <span class="kw">if</span> gender != <span class="str">'성별 선택'</span>:
+            filtered = filtered[filtered[<span class="str">'Gender'</span>] == gender]
+        <span class="kw">if</span> age != <span class="str">'연령대 선택'</span>:
+            filtered = filtered[filtered[<span class="str">'Age'</span>] == age]
+        <span class="kw">if</span> skin_type != <span class="str">'피부 타입 선택'</span>:
+            filtered = filtered[filtered[<span class="str">'Skin Type'</span>] == skin_type]
+        <span class="kw">if</span> filtered.<span class="fn">empty</span>:
+            <span class="kw">return</span> <span class="fn">jsonify</span>({<span class="str">'error'</span>: <span class="str">'조건에 맞는 데이터가 없습니다.'</span>}), <span class="num">404</span>
+        row = filtered.<span class="fn">iloc</span>[<span class="num">0</span>]
+        <span class="kw">return</span> <span class="fn">_build_response</span>(row, gender, age, skin_type)</div>
+
+    <div class="explain">
+      키워드(피부 고민 문장)를 입력하지 않았을 때는, 선택한 조건(성별/연령/피부타입)에 맞는 데이터를 필터링해서 첫 번째 행을 돌려줘요.<br>
+      <b>filtered.empty</b>는 조건에 맞는 데이터가 하나도 없을 때 True가 돼요. 이 경우 404 오류를 반환해요.<br>
+      <b>iloc[0]</b>은 표에서 0번째(첫 번째) 행을 가져오라는 뜻이에요.
+    </div>
+
+    <hr style="margin:20px 0; border-color:#EEE;">
+
+    <h3>📍 경우 2: 키워드가 있는 경우 (AI 유사도 계산)</h3>
+    <div class="code-block">    cleaned = <span class="fn">preprocess_input</span>(user_input)
+    <span class="kw">if not</span> cleaned:
+        <span class="kw">return</span> <span class="fn">jsonify</span>({<span class="str">'error'</span>: <span class="str">'유효한 단어를 찾을 수 없습니다.'</span>}), <span class="num">400</span>
+
+    <span class="cm"># 전체 데이터 TF-IDF 유사도 계산</span>
+    input_vec  = tfidf.<span class="fn">transform</span>([cleaned])
+    cosine_sim = <span class="fn">linear_kernel</span>(input_vec, tfidf_matrix)[<span class="num">0</span>]
+
+    <span class="cm"># 프로필 일치 보너스 (항목당 0.05, 최대 0.15)</span>
+    profile_bonus = np.<span class="fn">zeros</span>(<span class="fn">len</span>(df_skin))
+    <span class="kw">if</span> gender != <span class="str">'성별 선택'</span>:
+        profile_bonus += (df_skin[<span class="str">'Gender'</span>] == gender).values * <span class="num">0.05</span>
+    <span class="kw">if</span> age != <span class="str">'연령대 선택'</span>:
+        profile_bonus += (df_skin[<span class="str">'Age'</span>] == age).values * <span class="num">0.05</span>
+    <span class="kw">if</span> skin_type != <span class="str">'피부 타입 선택'</span>:
+        profile_bonus += (df_skin[<span class="str">'Skin Type'</span>] == skin_type).values * <span class="num">0.05</span>
+
+    best_idx = <span class="fn">int</span>((cosine_sim + profile_bonus).<span class="fn">argmax</span>())
+    row      = df_skin.<span class="fn">iloc</span>[best_idx]
+    <span class="kw">return</span> <span class="fn">_build_response</span>(row, gender, age, skin_type)</div>
+
+    <div class="explain">
+      <b>tfidf.transform([cleaned])</b><br>
+      전처리된 사용자 입력 문장을 숫자 벡터(점수 배열)로 바꿔요. 예를 들어 "검버섯 생기다"가 [0.0, 0.8, 0.0, 0.4, ...] 같은 숫자 배열이 돼요.
+    </div>
+
+    <div class="explain">
+      <b>linear_kernel(input_vec, tfidf_matrix)[0]</b><br>
+      사용자 입력 벡터와 9031개 데이터 벡터를 하나씩 비교해서 유사도 점수(0~1)를 9031개 계산해요. 1에 가까울수록 비슷한 내용이에요.
+    </div>
+
+    <div class="analogy">
+      코사인 유사도는 두 화살표가 얼마나 같은 방향을 가리키는지 보는 거예요. "검버섯"이라는 단어가 데이터 행에 많이 있을수록 같은 방향(높은 점수)이 돼요.
+    </div>
+
+    <div class="explain">
+      <b>profile_bonus = np.zeros(len(df_skin))</b><br>
+      9031개짜리 0으로 가득 찬 배열을 만들어요. 여기에 프로필이 일치하는 행마다 0.05씩 더해줘요. 성별·연령·피부타입 3개 모두 맞으면 최대 +0.15를 받아요.
+    </div>
+
+    <div class="point">
+      왜 작은 보너스(0.05)만 주냐고요? 보너스가 너무 크면 피부 고민과 전혀 관계없는 내용이지만 프로필만 맞는 데이터가 1등이 되는 문제가 생겨요. 작은 보너스는 "유사도가 비슷할 때 프로필이 맞는 걸 조금 더 우선시"하는 역할만 해요.
+    </div>
+
+    <div class="explain">
+      <b>(cosine_sim + profile_bonus).argmax()</b><br>
+      유사도 점수 + 보너스 점수를 더한 최종 점수 배열에서 가장 큰 값의 위치(행 번호)를 찾아요. 그 행이 가장 추천할 만한 데이터예요.
+    </div>
+  </div>
+
+
+  <!-- ======================= SECTION 7 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">7</span> 응답 조립 함수 — _build_response()</p>
+
+    <div class="code-block"><span class="kw">def</span> <span class="fn">_build_response</span>(row, gender, age, skin_type):
+    profile_parts = [v <span class="kw">for</span> v <span class="kw">in</span> [gender, age, skin_type]
+                     <span class="kw">if</span> v <span class="kw">not in</span> (<span class="str">'성별 선택'</span>, <span class="str">'연령대 선택'</span>, <span class="str">'피부 타입 선택'</span>)]
+    <span class="kw">return</span> <span class="fn">jsonify</span>({
+        <span class="str">'profile'</span>:           <span class="str">', '</span>.<span class="fn">join</span>(profile_parts) <span class="kw">if</span> profile_parts <span class="kw">else</span> <span class="str">'전체'</span>,
+        <span class="str">'response'</span>:          row[<span class="str">'Makeup Response'</span>],
+        <span class="str">'rec_ingredients'</span>:   row[<span class="str">'Recommended Ingredients'</span>],
+        <span class="str">'avoid_ingredients'</span>: row[<span class="str">'Ingredients to Avoid'</span>],
+    })</div>
+
+    <div class="explain">
+      <b>profile_parts</b>: 사용자가 선택한 값 중 "선택 안 함" 상태가 아닌 것들만 모아요. 예를 들어 성별만 "여성"을 선택했다면 <code>['여성']</code>이 돼요.<br><br>
+      <b>jsonify({...})</b>: 결과를 JSON 형식으로 브라우저에 보내요. JSON은 데이터를 주고받을 때 쓰는 표준 형식으로, 마치 택배 상자처럼 여러 정보를 담아서 보낼 수 있어요.
+    </div>
+
+    <table>
+      <tr><th>JSON 키</th><th>내용</th><th>예시</th></tr>
+      <tr><td>profile</td><td>사용자가 선택한 프로필</td><td>"여성, 50대 이상, 복합성"</td></tr>
+      <tr><td>response</td><td>추천 솔루션 텍스트</td><td>"검버섯 완화를 위해..."</td></tr>
+      <tr><td>rec_ingredients</td><td>추천 성분</td><td>"나이아신아마이드, 비타민C"</td></tr>
+      <tr><td>avoid_ingredients</td><td>주의 성분</td><td>"알코올, 향료"</td></tr>
+    </table>
+  </div>
+
+
+  <!-- ======================= SECTION 8 ======================= -->
+  <div class="card">
+    <p class="card-title"><span class="section-num">8</span> 서버 실행</p>
+
+    <div class="code-block"><span class="kw">if</span> __name__ == <span class="str">'__main__'</span>:
+    app.<span class="fn">run</span>(debug=<span class="kw">True</span>, port=<span class="num">5000</span>)</div>
+
+    <div class="explain">
+      <b>if __name__ == '__main__'</b>: 이 파일을 직접 실행할 때만 서버를 시작해요. 다른 파일에서 import해서 쓸 때는 자동으로 서버가 켜지지 않아요.<br><br>
+      <b>debug=True</b>: 개발 중에 코드를 수정하면 서버가 자동으로 재시작돼요. 실제 서비스를 배포할 때는 False로 바꿔야 해요.<br><br>
+      <b>port=5000</b>: 서버가 5000번 포트를 사용해요. 그래서 주소가 <code>http://127.0.0.1:5000</code> 이에요.
+    </div>
+
+    <div class="analogy">
+      포트 번호는 같은 컴퓨터 안에 있는 "방 번호"예요. 5000번 방에서 이 서버가 손님을 기다리는 거예요. 브라우저는 5000번 방으로 요청을 보내요.
+    </div>
+  </div>
+
+
+  <!-- ======================= 전체 흐름 요약 ======================= -->
+  <div class="card">
+    <p class="card-title">🔄 전체 동작 흐름 요약</p>
+
+    <table>
+      <tr><th>순서</th><th>무슨 일이 일어나나요?</th></tr>
+      <tr><td>1</td><td><code>python web_app.py</code> 실행 → Flask 서버 시작, CSV·모델 파일 메모리에 로드</td></tr>
+      <tr><td>2</td><td>브라우저에서 <code>http://127.0.0.1:5000</code> 접속 → <code>index.html</code> 화면 표시</td></tr>
+      <tr><td>3</td><td>사용자가 피부 고민을 입력하고 "추천 받기" 클릭</td></tr>
+      <tr><td>4</td><td>브라우저가 <code>/recommend</code>로 POST 요청 전송 (키워드 + 성별 + 연령 + 피부타입)</td></tr>
+      <tr><td>5</td><td>서버가 텍스트를 전처리하고 TF-IDF 유사도 + 프로필 보너스로 최적 데이터 선택</td></tr>
+      <tr><td>6</td><td>서버가 JSON 형태로 결과(추천 솔루션, 추천 성분, 주의 성분) 반환</td></tr>
+      <tr><td>7</td><td>브라우저가 JSON을 받아서 화면에 결과 표시</td></tr>
+    </table>
+  </div>
+
+
+  <div style="text-align:center; color:#AAA; font-size:13px; padding-bottom:20px;">
+    web_app.py 코드 설명서 · AI 피부 메이크업 추천 프로젝트
+  </div>
+
+</div>
+</body>
+</html>
