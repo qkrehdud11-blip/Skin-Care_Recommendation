@@ -46,10 +46,27 @@ app.config.update(
 Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
 print('Loading data and models...')
-df_skin = pd.read_csv(BASE_DIR / 'datasets' / 'skin_data_final.csv')
-tfidf_matrix = mmread(BASE_DIR / 'models' / 'Tfidf_skin_data.mtx').tocsr()
-with open(BASE_DIR / 'models' / 'tfidf.pkl', 'rb') as model_file:
-    tfidf = pickle.load(model_file)
+try:
+    # 1. 전문가 상담 데이터
+    df_skin = pd.read_csv(BASE_DIR / 'datasets' / 'skin_data_final.csv')
+    tfidf_matrix = mmread(BASE_DIR / 'models' / 'Tfidf_skin_data.mtx').tocsr()
+    with open(BASE_DIR / 'models' / 'tfidf.pkl', 'rb') as model_file:
+        tfidf = pickle.load(model_file)
+    
+    # 2. 올리브영 데이터 (제품 및 리뷰)
+    df_product_list = pd.read_csv(BASE_DIR / 'datasets' / 'oliveyoung_product_list.csv')
+    if (BASE_DIR / 'datasets' / 'oliveyoung_reviews_preprocessed.csv').exists():
+        df_reviews = pd.read_csv(BASE_DIR / 'datasets' / 'oliveyoung_reviews_preprocessed.csv')
+        tfidf_matrix_reviews = mmread(BASE_DIR / 'models' / 'Tfidf_reviews.mtx').tocsr()
+        with open(BASE_DIR / 'models' / 'tfidf_reviews.pkl', 'rb') as f:
+            tfidf_reviews = pickle.load(f)
+    else:
+        df_reviews = None
+    
+    print('Load complete.')
+except Exception as e:
+    print(f"Error loading files: {e}")
+
 okt = Okt()
 
 try:
@@ -58,7 +75,6 @@ try:
 except (FileNotFoundError, KeyError):
     stopwords = ['아', '휴', '아이구', '아이쿠', '아이고', '어', '나', '우리', '저희',
                  '따라', '의해', '을', '를', '에', '의', '가', '으로', '로', '에게']
-print('Load complete.')
 
 
 def get_db():
@@ -224,6 +240,8 @@ def get_popular_terms(limit=5):
 
 
 def record_search(user_input, cleaned, gender, age, skin_type, row):
+    # 만약 row가 None이면 (리뷰 모드 등) 추천 성분은 생략
+    rec_ing = str(row['Recommended Ingredients']) if row is not None else "리뷰 기반 추천"
     db = get_db()
     db.execute(
         '''INSERT INTO search_history
@@ -235,7 +253,7 @@ def record_search(user_input, cleaned, gender, age, skin_type, row):
          None if gender == '성별 선택' else gender,
          None if age == '연령대 선택' else age,
          None if skin_type == '피부 타입 선택' else skin_type,
-         str(row['Recommended Ingredients']), utc_now()),
+         rec_ing, utc_now()),
     )
     db.commit()
 
@@ -251,7 +269,7 @@ def index():
             (g.user['id'],),
         ).fetchall()
     return render_template(
-        'index_3.html', recent_history=recent_history,
+        'index_4.html', recent_history=recent_history,
         popular_terms=get_popular_terms(),
     )
 
@@ -400,7 +418,12 @@ def recommend():
     gender = data.get('gender', '성별 선택')
     age = data.get('age', '연령대 선택')
     skin_type = data.get('skin_type', '피부 타입 선택')
+    mode = data.get('mode', 'expert')
 
+    if mode == 'review':
+        return _recommend_by_review(user_input, gender, age, skin_type)
+    
+    # Expert Mode
     cleaned = ''
     if not user_input:
         filtered = df_skin.copy()
@@ -441,17 +464,98 @@ def recommend():
         )
         db.commit()
     record_search(user_input, cleaned, gender, age, skin_type, row)
-    return build_response(row, gender, age, skin_type)
+    return build_response(row, user_input, gender, age, skin_type)
 
 
-def build_response(row, gender, age, skin_type):
+def _recommend_by_review(user_input, gender, age, skin_type):
+    if df_reviews is None:
+        return jsonify({'error': '리뷰 데이터가 로드되지 않았습니다.'}), 500
+    
+    if not user_input:
+        return jsonify({'error': '리뷰 검색을 위해 고민 키워드를 입력해주세요.'}), 400
+
+    cleaned = preprocess_input(user_input)
+    if not cleaned:
+        return jsonify({'error': '유효한 키워드를 입력해주세요.'}), 400
+
+    input_vec = tfidf_reviews.transform([cleaned])
+    cosine_sim = linear_kernel(input_vec, tfidf_matrix_reviews)[0]
+    
+    top_indices = cosine_sim.argsort()[-3:][::-1]
+    
+    results = []
+    for idx in top_indices:
+        row = df_reviews.iloc[idx]
+        p_name = row['product_name']
+        
+        link_info = df_product_list[df_product_list['product_name'] == p_name].head(1)
+        link = link_info.iloc[0]['product_link'] if not link_info.empty else "#"
+        brand = link_info.iloc[0]['product_brand'] if not link_info.empty else "기타"
+        
+        results.append({
+            'name': p_name,
+            'brand': brand,
+            'link': link,
+            'review_snippet': row['review'][:150] + "..."
+        })
+    
+    # 기록 (row는 None으로 전달하여 리뷰 모드임을 표시)
+    record_search(user_input, cleaned, gender, age, skin_type, None)
+    
+    return jsonify({'mode': 'review', 'results': results})
+
+
+def build_response(row, user_input, gender, age, skin_type):
+    # 성분 기반 제품 매칭 (Okt 활용)
+    search_terms = []
+    if user_input:
+        search_terms.extend(okt.nouns(user_input))
+    
+    rec_ing_text = str(row['Recommended Ingredients'])
+    if rec_ing_text != "nan":
+        search_terms.extend(okt.nouns(rec_ing_text))
+    
+    # 중복 제거 및 필터링
+    search_terms = [t for t in list(dict.fromkeys(search_terms)) if len(t) >= 2 and t not in ['피부', '추출물', '사용', '도움', '성분']]
+    
+    matched_links = []
+    seen_links = set()
+    
+    for keyword in search_terms[:4]:
+        # 1. 제품명/브랜드 검색
+        matches = df_product_list[
+            df_product_list['product_name'].str.contains(keyword, case=False, na=False) |
+            df_product_list['product_brand'].str.contains(keyword, case=False, na=False)
+        ].head(2)
+        
+        for _, m in matches.iterrows():
+            if m['product_link'] not in seen_links:
+                matched_links.append({'brand': m['product_brand'], 'name': m['product_name'], 'link': m['product_link']})
+                seen_links.add(m['product_link'])
+        
+        # 2. 리뷰 검색 (Proxy)
+        if df_reviews is not None:
+            r_matches = df_reviews[df_reviews['review'].str.contains(keyword, na=False)].head(1)
+            for _, rm in r_matches.iterrows():
+                p_info = df_product_list[df_product_list['product_name'] == rm['product_name']].head(1)
+                if not p_info.empty and p_info.iloc[0]['product_link'] not in seen_links:
+                    matched_links.append({
+                        'brand': p_info.iloc[0]['product_brand'], 
+                        'name': p_info.iloc[0]['product_name'], 
+                        'link': p_info.iloc[0]['product_link']
+                    })
+                    seen_links.add(p_info.iloc[0]['product_link'])
+
     profile_parts = [value for value in [gender, age, skin_type]
                      if value not in ('성별 선택', '연령대 선택', '피부 타입 선택')]
+    
     return jsonify({
+        'mode': 'expert',
         'profile': ', '.join(profile_parts) if profile_parts else '전체',
         'response': row['Makeup Response'],
         'rec_ingredients': row['Recommended Ingredients'],
         'avoid_ingredients': row['Ingredients to Avoid'],
+        'product_recommendations': matched_links[:6]
     })
 
 
