@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>사용자 관리 | SkinScope Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="{{ url_for('static', filename='favicon_7.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_7.css') }}">
+</head>
+<body class="admin-page">
+  <aside class="admin-sidebar">
+    <a class="logo admin-logo" href="{{ url_for('index') }}"><span class="logo-symbol">A</span><span>Skin<span>Scope</span></span></a>
+    <div class="admin-label">ADMIN CONSOLE</div>
+    <nav class="admin-nav"><a class="active" href="{{ url_for('admin_users') }}"><span>◌</span> 사용자 관리</a><a href="{{ url_for('index') }}"><span>⌂</span> 서비스 홈</a></nav>
+    <div class="admin-account"><span>{{ current_user['name'][0] }}</span><div><strong>{{ current_user['name'] }}</strong><small>{{ current_user['username'] }}</small></div></div>
+    <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="admin-logout" type="submit">로그아웃</button></form>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-header"><div><p>MEMBER MANAGEMENT</p><h1>사용자 관리</h1><span>가입 회원의 프로필과 서비스 이용 현황을 확인합니다.</span></div><div class="admin-date">SkinScope v7</div></header>
+    <section class="stat-grid">
+      <article><span class="stat-icon users">U</span><div><small>전체 계정</small><strong>{{ stats['total'] }}</strong><p>관리자 포함</p></div></article>
+      <article><span class="stat-icon members">M</span><div><small>일반 회원</small><strong>{{ stats['members'] or 0 }}</strong><p>가입 사용자</p></div></article>
+      <article><span class="stat-icon activity">A</span><div><small>로그인 사용자</small><strong>{{ stats['active'] or 0 }}</strong><p>로그인 이력 기준</p></div></article>
+      <article><span class="stat-icon reports">R</span><div><small>누적 분석</small><strong>{{ stats['searches'] }}</strong><p>비회원 포함 이용 횟수</p></div></article>
+    </section>
+
+    <section class="analytics-grid">
+      <article class="ranking-card">
+        <div class="admin-section-title"><div><p>RELATED SEARCH RANKING</p><h2>연관 검색어 TOP 5</h2></div><span>최근 1,000건 기준</span></div>
+        {% if popular_terms %}
+          <ol class="ranking-list">
+            {% set max_count = popular_terms[0][1] %}
+            {% for term, count in popular_terms %}
+              <li><span class="rank-number">{{ loop.index }}</span><div><strong>{{ term }}</strong><i><b style="width: {{ (count / max_count * 100)|round }}%"></b></i></div><small>{{ count }}회</small></li>
+            {% endfor %}
+          </ol>
+        {% else %}<p class="admin-empty">집계된 검색어가 없습니다.</p>{% endif %}
+      </article>
+
+      <article class="usage-card">
+        <div class="admin-section-title"><div><p>RECENT ACTIVITY</p><h2>최근 사용 기록</h2></div><span>최근 20건</span></div>
+        {% if recent_searches %}
+          <div class="usage-list">
+            {% for item in recent_searches %}
+              <div class="usage-item">
+                <span class="usage-avatar">{{ item['name'][0] if item['name'] else 'G' }}</span>
+                <div class="usage-main"><strong>{{ item['keyword'] or '프로필 조건 분석' }}</strong><p>{{ item['name'] or '비회원' }}{% if item['username'] %} · {{ item['username'] }}{% endif %}</p></div>
+                <div class="usage-profile">{% if item['age'] %}{{ item['age'] }} · {% endif %}{{ item['skin_type'] or '전체' }}</div>
+                <time>{{ item['created_at']|kst('%m-%d') }}<small>{{ item['created_at']|kst('%H:%M') }}</small></time>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}<p class="admin-empty">아직 사용 기록이 없습니다.</p>{% endif %}
+      </article>
+    </section>
+
+    <section class="user-table-card">
+      <div class="table-toolbar"><div><h2>회원 목록</h2><span>비밀번호 등 민감 정보는 표시하지 않습니다.</span></div><label class="table-search"><span>⌕</span><input id="user-search" type="search" placeholder="이름, 아이디, 이메일 검색"></label></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>사용자</th><th>계정</th><th>피부 프로필</th><th>권한</th><th>추천</th><th>가입일</th><th>최근 로그인</th><th>관리</th></tr></thead>
+          <tbody id="user-table-body">
+            {% for user in users %}
+              <tr data-search="{{ user['name'] }} {{ user['username'] }} {{ user['email'] }}">
+                <td><div class="user-cell"><span>{{ user['name'][0] }}</span><div><strong>{{ user['name'] }}</strong><small>#{{ user['id'] }}</small></div></div></td>
+                <td><strong>{{ user['username'] }}</strong><small>{{ user['email'] }}</small></td>
+                <td><div class="profile-tags">{% if user['gender'] %}<span>{{ user['gender'] }}</span>{% endif %}{% if user['age'] %}<span>{{ user['age'] }}</span>{% endif %}{% if user['skin_type'] %}<span>{{ user['skin_type'] }}</span>{% endif %}{% if not user['gender'] and not user['age'] and not user['skin_type'] %}<small>미입력</small>{% endif %}</div></td>
+                <td><span class="role-badge {{ user['role'] }}">{{ '관리자' if user['role'] == 'admin' else '회원' }}</span></td>
+                <td><strong>{{ user['recommendation_count'] }}</strong>회</td>
+                <td>{{ user['created_at'][:10] }}</td>
+                <td>{{ user['last_login'][:10] if user['last_login'] else '없음' }}</td>
+                <td>
+                  {% if user['role'] == 'user' %}
+                    <form class="delete-user-form" method="post" action="{{ url_for('delete_user', user_id=user['id']) }}" data-user-name="{{ user['name'] }} ({{ user['username'] }})">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="delete-user-button" type="submit">계정 삭제</button>
+                    </form>
+                  {% else %}
+                    <span class="protected-account">보호 계정</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p id="empty-search" class="empty-search hidden">검색 결과가 없습니다.</p>
+      <div class="table-footer">총 {{ users|length }}개의 계정</div>
+    </section>
+  </main>
+  <script>
+    const search = document.getElementById('user-search');
+    const rows = Array.from(document.querySelectorAll('#user-table-body tr'));
+    document.querySelectorAll('.delete-user-form').forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        const userName = form.dataset.userName;
+        if (!window.confirm(userName + ' 계정을 삭제할까요?\n삭제한 계정은 복구할 수 없습니다.')) event.preventDefault();
+      });
+    });
+    search.addEventListener('input', function () {
+      const query = search.value.trim().toLowerCase();
+      let visible = 0;
+      rows.forEach(function (row) { const show = row.dataset.search.toLowerCase().includes(query); row.hidden = !show; if (show) visible += 1; });
+      document.getElementById('empty-search').classList.toggle('hidden', visible !== 0);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="피부 프로필과 고민을 분석해 맞춤 케어 및 성분 가이드를 제공하는 AI 스킨케어 서비스입니다.">
+  <meta name="theme-color" content="#405f4b">
+  <title>피부 분석 | SkinScope v7</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const saved = window.localStorage.getItem('skinscope-v7-view');
+      if ((params.get('view') || saved) === 'desktop') {
+        document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=1280');
+      }
+    }());
+  </script>
+  <link rel="icon" href="{{ url_for('static', filename='favicon_7.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_7.css') }}">
+</head>
+<body class="v7-page analysis-page">
+  <a class="skip-link" href="#diagnosis">피부 분석 입력으로 바로가기</a>
+  <header id="top" class="topbar">
+    <div class="nav-wrap">
+      <a class="logo" href="{{ url_for('index') }}" aria-label="SkinScope 홈">
+        <span class="logo-symbol" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M16 3C9.4 3 5 8.1 5 14.5 5 22.2 11 27 16 29c5-2 11-6.8 11-14.5C27 8.1 22.6 3 16 3Z"></path><path d="M10.5 16.5c2.1-5.1 6.4-7.2 11-7.5-1 5.9-4.4 9.8-10.2 11.2"></path></svg>
+        </span>
+        <span>Skin<span>Scope</span></span>
+      </a>
+      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="메뉴 열기" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button>
+      <nav id="main-nav" aria-label="주요 메뉴">
+        <a href="#how-it-works">이용 방법</a>
+        <a href="#diagnosis">피부 분석</a>
+        {% if current_user %}
+          {% if current_user["role"] == "admin" %}<a href="{{ url_for('admin_users') }}">사용자 관리</a>{% endif %}
+          <span class="member-chip"><span>{{ current_user["name"][0] }}</span>{{ current_user["name"] }}님</span>
+          <form class="logout-form" method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">로그아웃</button></form>
+        {% else %}
+          <a href="{{ url_for('login') }}">로그인</a>
+          <a class="nav-cta" href="{{ url_for('register') }}">회원가입</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash-message {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    <section id="how-it-works" class="process-strip" aria-label="이용 방법">
+      <div class="process-inner">
+        <p><span>HOW IT WORKS</span> 단 세 단계로 확인하는 나의 스킨케어 가이드</p>
+        <ol>
+          <li><span>1</span><div><strong>프로필 선택</strong><small>피부 기본 정보 입력</small></div></li>
+          <li><span>2</span><div><strong>고민 작성</strong><small>현재 피부 상태 설명</small></div></li>
+          <li><span>3</span><div><strong>리포트 확인</strong><small>솔루션과 성분 확인</small></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="diagnosis" class="diagnosis-section">
+      <div class="section-heading">
+        <div><span class="section-kicker">PERSONAL DIAGNOSIS</span><h2>지금 내 피부를 알려주세요</h2></div>
+        <p>{% if current_user %}{{ current_user["name"] }}님의 저장된 프로필을 불러왔어요.<br>현재 상태에 맞게 자유롭게 수정할 수 있습니다.{% else %}필수 항목은 없습니다. 회원가입하면<br>피부 프로필과 이용 기록을 이어서 관리할 수 있어요.{% endif %}</p>
+      </div>
+
+      <div class="diagnosis-layout">
+        <aside class="guide-panel">
+          <div class="guide-top">
+            <span class="guide-icon"><svg viewBox="0 0 24 24"><path d="M12 3a8 8 0 0 0-4.8 14.4c.9.7 1.3 1.4 1.3 2.1h7c0-.7.4-1.4 1.3-2.1A8 8 0 0 0 12 3Z"></path><path d="M9 22h6M12 6v2M7.8 8l1.4 1.4M16.2 8l-1.4 1.4"></path></svg></span>
+            <span class="step-count">READY CHECK</span>
+          </div>
+          <h3>입력 현황</h3>
+          <p>피부 타입을 모르더라도 고민을 구체적으로 적으면 분석할 수 있습니다.</p>
+          <div class="completion-box">
+            <div><span>입력 완성도</span><strong id="progress-value">0%</strong></div>
+            <div class="progress-track"><span id="progress-bar"></span></div>
+            <small id="progress-help">항목을 하나 이상 선택해 주세요.</small>
+          </div>
+          <ul>
+            <li><span>✓</span> 입력 정보는 분석에만 사용됩니다.</li>
+            <li><span>✓</span> 결과는 입력 직후 확인할 수 있습니다.</li>
+          </ul>
+        </aside>
+
+        <div class="form-card">
+          <div class="form-card-head">
+            <div><span>SKIN PROFILE</span><h3>기본 정보</h3></div>
+            <button id="reset-form" type="button">입력 초기화</button>
+          </div>
+
+          <form id="recommend-form" novalidate>
+            <div class="form-step-heading"><span>STEP 1</span><div><strong>분석 목적을 선택하세요</strong><small>원하는 결과에 따라 분석 방식을 바꿀 수 있어요.</small></div></div>
+            <fieldset class="recommend-mode" aria-label="추천 방식 선택" aria-describedby="mode-help">
+              <legend class="visually-hidden">추천 방식</legend>
+              <label class="mode-option">
+                <input type="radio" name="mode" value="expert" checked>
+                <span class="mode-icon">✦</span>
+                <span><strong>상담 데이터 분석</strong><small>문제성 피부 메이크업 상담 데이터에서 유사 사례와 성분을 찾아요.</small></span>
+              </label>
+              <label class="mode-option{% if not review_mode_available %} disabled{% endif %}">
+                <input type="radio" name="mode" value="review" {% if not review_mode_available %}disabled{% endif %}>
+                <span class="mode-icon">◎</span>
+                <span><strong>리뷰 제품 찾기</strong><small>{% if review_mode_available %}비슷한 고민의 스킨케어 후기를 찾아 제품을 비교해요.{% else %}현재 리뷰 데이터를 사용할 수 없어요.{% endif %}</small></span>
+              </label>
+            </fieldset>
+            <p id="mode-help" class="mode-help"><span>✦</span><strong id="mode-help-title">상담 데이터 분석</strong><span id="mode-help-text">프로필은 선택 사항이며 결과에는 메이크업 조언이 포함될 수 있습니다.</span></p>
+
+            <div class="form-step-heading second-step"><span>STEP 2</span><div><strong>현재 피부 상태를 알려주세요</strong><small>선택 항목이 많을수록 프로필을 더 구체적으로 반영해요.</small></div></div>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-title"><b>성별</b><small>선택</small></span>
+                <span class="select-box"><select id="gender" name="gender"><option value="성별 선택">선택 안 함</option><option value="여성" {% if current_user and current_user["gender"] == "여성" %}selected{% endif %}>여성</option><option value="남성" {% if current_user and current_user["gender"] == "남성" %}selected{% endif %}>남성</option></select><svg viewBox="0 0 20 20"><path d="m6 8 4 4 4-4"></path></svg></span>
+              </label>
+              <label class="field">
+                <span class="field-title"><b>연령대</b><small>선택</small></span>
+                <span class="select-box"><select id="age" name="age"><option value="연령대 선택">선택 안 함</option><option value="20대" {% if current_user and current_user["age"] == "20대" %}selected{% endif %}>20대</option><option value="30대" {% if current_user and current_user["age"] == "30대" %}selected{% endif %}>30대</option><option value="40대" {% if current_user and current_user["age"] == "40대" %}selected{% endif %}>40대</option><option value="50대 이상" {% if current_user and current_user["age"] == "50대 이상" %}selected{% endif %}>50대 이상</option></select><svg viewBox="0 0 20 20"><path d="m6 8 4 4 4-4"></path></svg></span>
+              </label>
+              <label class="field">
+                <span class="field-title"><b>피부 타입</b><small>선택</small></span>
+                <span class="select-box"><select id="skin_type" name="skin_type"><option value="피부 타입 선택">선택 안 함</option><option value="건성" {% if current_user and current_user["skin_type"] == "건성" %}selected{% endif %}>건성</option><option value="지성" {% if current_user and current_user["skin_type"] == "지성" %}selected{% endif %}>지성</option><option value="복합성" {% if current_user and current_user["skin_type"] == "복합성" %}selected{% endif %}>복합성</option><option value="정상" {% if current_user and current_user["skin_type"] == "정상" %}selected{% endif %}>정상</option></select><svg viewBox="0 0 20 20"><path d="m6 8 4 4 4-4"></path></svg></span>
+              </label>
+            </div>
+
+            <div class="concern-field">
+              <div class="concern-label"><label for="keyword"><b>가장 신경 쓰이는 피부 고민</b><span>구체적으로 작성하면 더 좋아요</span></label><small><span id="char-count">0</span>/100</small></div>
+              <textarea id="keyword" name="keyword" rows="4" maxlength="100" aria-describedby="keyword-tip char-count" placeholder="예: 세안 후 피부가 심하게 당기고, 오후에는 코 주변 유분과 볼 쪽 각질이 신경 쓰여요."></textarea>
+              <p id="keyword-tip" class="input-tip"><span>TIP</span> 발생 부위, 시점, 느낌을 함께 적으면 더 관련성 높은 결과를 찾을 수 있어요.</p>
+              <div class="quick-keywords" aria-label="피부 고민 빠른 입력">
+                <span>빠른 입력</span>
+                <button type="button" data-keyword="피부가 건조하고 각질이 자주 생겨요">건조·각질</button>
+                <button type="button" data-keyword="피부 트러블과 여드름이 반복돼요">트러블</button>
+                <button type="button" data-keyword="피부가 민감하고 쉽게 붉어져요">민감·홍조</button>
+                <button type="button" data-keyword="모공과 과도한 유분이 고민이에요">모공·유분</button>
+              </div>
+            </div>
+
+            <div id="error-box" class="error-box hidden" role="alert"><span>!</span><p id="error-text"></p></div>
+            <button id="btn-recommend" class="submit-button" type="submit"><span class="button-icon"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"></path><path d="M12 7v5l3 2M18 3v5h5"></path></svg></span><span class="button-copy"><strong>AI 피부 분석 시작하기</strong><small>입력한 정보를 바탕으로 맞춤 가이드를 만들어요</small></span><span class="button-arrow">→</span></button>
+          </form>
+
+          <div id="loading" class="loading-state hidden" role="status" aria-live="polite">
+            <div class="loading-ring" aria-hidden="true"><span></span></div>
+            <div class="loading-copy"><strong id="loading-title">피부 고민을 정리하고 있어요</strong><p id="loading-description">입력한 표현에서 핵심 키워드를 찾는 중입니다.</p><div class="loading-progress"><span id="loading-progress-bar"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="result-box" class="report-section report-v2 hidden" aria-labelledby="result-title" aria-live="polite">
+      <div id="expert-mode-container">
+      <div class="report-header">
+        <div class="report-title"><span class="report-check">✓</span><div><p>ANALYSIS COMPLETE</p><h2 id="result-title" tabindex="-1">피부 상담 데이터 리포트</h2></div></div>
+        <div class="report-actions"><div class="report-meta"><span>분석 프로필</span><strong id="profile-text"></strong></div><button id="retry-button" type="button">다시 분석하기</button></div>
+      </div>
+      <nav class="report-quick-nav" aria-label="결과 빠른 이동">
+        <a href="#result-overview">핵심 요약</a><a href="#routine-guide">케어 순서</a><a href="#ingredient-guide">성분 가이드</a><a href="#detail-guide">상세 내용</a>
+      </nav>
+
+      <div id="result-overview" class="report-overview">
+        <div id="skin-visual" class="skin-visual skin-normal">
+          <img class="report-woman-photo" src="{{ url_for('static', filename='skinscope_report_woman_v7.png') }}" alt="차분한 분위기의 여성 스킨케어 일러스트">
+          <p id="visual-skin-label">BALANCED SKIN</p>
+        </div>
+
+        <article class="report-summary">
+          <div class="summary-label"><span></span><p>YOUR CARE DIRECTION</p></div>
+          <h3><span id="summary-skin-type">현재 피부</span>에 필요한<br><strong id="summary-focus">균형 있는 데일리 케어</strong></h3>
+          <p id="summary-text" class="summary-text"></p>
+          <div id="concern-tags" class="concern-tags"></div>
+          <div class="summary-notice"><span>i</span><p>한 번에 많은 제품을 바꾸기보다, 추천 방향에 맞춰 하나씩 적용해 보세요.</p></div>
+        </article>
+      </div>
+
+      <div id="routine-guide" class="routine-section">
+        <div class="report-section-heading"><div><p>DAILY CARE ROUTINE</p><h3>오늘부터 실천할 케어 순서</h3></div><span>기본 3단계</span></div>
+        <div class="routine-grid">
+          <article><span class="routine-number">01</span><div class="routine-icon cleanse"><svg viewBox="0 0 24 24"><path d="M12 3S6 10 6 15a6 6 0 0 0 12 0c0-5-6-12-6-12Z"></path><path d="M9 16c.7 1.3 1.7 2 3 2"></path></svg></div><div><small>MORNING &amp; NIGHT</small><h4>부드러운 클렌징</h4><p>피부 장벽을 지키도록 미지근한 물로 자극 없이 세안하세요.</p></div></article>
+          <article><span class="routine-number">02</span><div class="routine-icon treat"><svg viewBox="0 0 24 24"><path d="M9 3h6v4l3 4v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8l3-4V3Z"></path><path d="M9 7h6M9 14h6"></path></svg></div><div><small>TARGET CARE</small><h4 id="routine-focus-title">맞춤 성분 케어</h4><p id="routine-focus-text">추천 성분이 포함된 제품을 얇게 사용해 피부 고민을 관리하세요.</p></div></article>
+          <article><span class="routine-number">03</span><div class="routine-icon protect"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg></div><div><small>FINISH &amp; PROTECT</small><h4>보습과 보호</h4><p>보습제로 마무리하고 낮에는 자외선 차단제를 꼭 사용하세요.</p></div></article>
+        </div>
+      </div>
+
+      <div id="ingredient-guide" class="ingredient-visual-grid">
+        <article class="ingredient-feature recommend">
+          <div class="ingredient-art good-art" aria-hidden="true"><span class="art-circle"></span><span class="botanical botanical-one"></span><span class="botanical botanical-two"></span><div class="art-drop">+</div></div>
+          <div class="ingredient-copy"><p>GOOD FOR YOUR SKIN</p><h3>주목하면 좋은 성분</h3><div id="rec-text" class="ingredient-value"></div><small>제품 전성분표에서 해당 성분을 확인해 보세요.</small></div>
+        </article>
+        <article class="ingredient-feature avoid">
+          <div class="ingredient-art caution-art" aria-hidden="true"><span class="art-circle"></span><span class="caution-line"></span><div class="art-drop">!</div></div>
+          <div class="ingredient-copy"><p>USE WITH CAUTION</p><h3>사용 전 확인할 성분</h3><div id="avoid-text" class="ingredient-value"></div><small>피부 반응에는 개인차가 있으므로 패치 테스트를 권장합니다.</small></div>
+        </article>
+      </div>
+
+      <section id="expert-product-box" class="related-products hidden" aria-labelledby="related-products-title">
+        <div class="report-section-heading"><div><p>RELATED PRODUCTS</p><h3 id="related-products-title">분석 키워드 연관 제품</h3></div><span>스킨케어 카테고리 한정</span></div>
+        <p class="product-disclaimer">추천 성분과 제품명 키워드의 연관 결과이며, 실제 전성분은 상품 상세 페이지에서 다시 확인해 주세요.</p>
+        <div id="expert-product-list" class="product-card-grid"></div>
+      </section>
+
+      <details id="detail-guide" class="full-guide">
+        <summary><span><b>상세 케어 가이드</b><small>AI가 분석한 전체 내용을 확인하세요.</small></span><i>+</i></summary>
+        <div class="full-guide-content">
+          <div id="guide-sections" class="guide-sections"></div>
+          <div class="guide-ingredient-summary">
+            <div class="guide-ingredient good"><span>추천 성분</span><strong id="guide-rec-ingredient"></strong></div>
+            <div class="guide-ingredient caution"><span>주의 성분</span><strong id="guide-avoid-ingredient"></strong></div>
+          </div>
+          <p id="response-text" class="visually-hidden"></p>
+        </div>
+      </details>
+      </div>
+
+      <div id="review-mode-container" class="hidden">
+        <div class="report-header review-report-header">
+          <div class="report-title"><span class="report-check">★</span><div><p>SKINCARE REVIEWS</p><h2 id="review-result-title" tabindex="-1">비슷한 고민의 제품 후기</h2></div></div>
+          <button id="retry-button-review" type="button">다시 검색하기</button>
+        </div>
+        <div class="review-intro"><strong>스킨케어 리뷰만 비교했어요.</strong><p>색조·디바이스 카테고리는 제외하고 입력한 고민과 문장 유사도가 높은 후기 순으로 보여드립니다.</p></div>
+        <div id="review-results-grid" class="review-results-grid"></div>
+      </div>
+
+      <div class="report-footer"><p><strong>안내</strong> 본 결과는 문제성 피부 메이크업 상담 데이터 기반의 일반적인 가이드이며 의학적 진단을 대신하지 않습니다. 증상이 지속되면 전문의와 상담해 주세요.</p></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner"><a class="logo footer-logo" href="{{ url_for('index') }}">Skin<span>Scope</span></a><p>데이터로 더 명확해지는 나만의 스킨케어.</p><span>AI-based personal skincare guide</span></div>
+  </footer>
+
+  <div class="version-switch-footer">
+    <p id="current-version-label">현재 PC 버전을 보고 있습니다.</p>
+    <button id="version-switch-button" type="button">모바일 버전</button>
+  </div>
+
+  <nav class="mobile-dock" aria-label="모바일 빠른 메뉴">
+    <a href="{{ url_for('index') }}"><span>⌂</span><small>홈</small></a>
+    <a href="#how-it-works" data-dock-link="how-it-works"><span>?</span><small>이용 방법</small></a>
+    <a href="#diagnosis" data-dock-link="diagnosis"><span>◎</span><small>피부 분석</small></a>
+    {% if current_user %}<a href="{{ url_for('admin_users') if current_user["role"] == "admin" else url_for('index') + '#history' }}"><span>◌</span><small>{{ '관리' if current_user["role"] == "admin" else '기록' }}</small></a>{% else %}<a href="{{ url_for('login') }}"><span>◌</span><small>로그인</small></a>{% endif %}
+  </nav>
+
+  <script>
+    const viewParams = new URLSearchParams(window.location.search);
+    const storedView = window.localStorage.getItem('skinscope-v7-view');
+    const requestedView = viewParams.get('view');
+    const embeddedMobile = viewParams.get('embedded') === '1';
+    const automaticView = window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    const currentView = requestedView || storedView || automaticView;
+    const versionLabel = document.getElementById('current-version-label');
+    const versionButton = document.getElementById('version-switch-button');
+
+    document.body.dataset.view = currentView;
+    versionLabel.textContent = currentView === 'mobile' ? '현재 모바일 버전을 보고 있습니다.' : '현재 PC 버전을 보고 있습니다.';
+    versionButton.textContent = currentView === 'mobile' ? 'PC 버전' : '모바일 버전';
+
+    if (currentView === 'mobile' && window.innerWidth > 767 && !embeddedMobile && window.top === window.self) {
+      document.body.classList.add('mobile-view-host');
+      const mobileFrame = document.createElement('iframe');
+      const mobileUrl = new URL(window.location.href);
+      mobileUrl.searchParams.set('view', 'mobile');
+      mobileUrl.searchParams.set('embedded', '1');
+      mobileFrame.className = 'mobile-version-frame';
+      mobileFrame.title = 'SkinScope 모바일 버전';
+      mobileFrame.src = mobileUrl.toString();
+      document.body.appendChild(mobileFrame);
+    }
+
+    versionButton.addEventListener('click', function () {
+      const nextView = currentView === 'mobile' ? 'desktop' : 'mobile';
+      window.localStorage.setItem('skinscope-v7-view', nextView);
+      const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set('view', nextView);
+      targetUrl.searchParams.delete('embedded');
+      window.top.location.href = targetUrl.toString();
+    });
+
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainNav = document.getElementById('main-nav');
+    const mobileMenuQuery = window.matchMedia('(max-width: 767px)');
+    mainNav.setAttribute('aria-hidden', String(mobileMenuQuery.matches));
+    mobileMenuQuery.addEventListener('change', function (event) {
+      if (!event.matches) document.body.classList.remove('menu-open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      mainNav.setAttribute('aria-hidden', String(event.matches));
+    });
+    menuToggle.addEventListener('click', function () {
+      const open = document.body.classList.toggle('menu-open');
+      menuToggle.setAttribute('aria-expanded', String(open));
+      menuToggle.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+      mainNav.setAttribute('aria-hidden', String(!open));
+    });
+    mainNav.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        document.body.classList.remove('menu-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        mainNav.setAttribute('aria-hidden', String(mobileMenuQuery.matches));
+      });
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && document.body.classList.contains('menu-open')) {
+        document.body.classList.remove('menu-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        mainNav.setAttribute('aria-hidden', String(mobileMenuQuery.matches));
+        menuToggle.focus();
+      }
+    });
+
+    const dockLinks = Array.from(document.querySelectorAll('.mobile-dock a[href^="#"]'));
+    const reportDockLink = document.querySelector('.mobile-dock a[href="#result-box"]');
+    if (reportDockLink) reportDockLink.addEventListener('click', function (event) {
+      if (document.getElementById('result-box').classList.contains('hidden')) {
+        event.preventDefault();
+        document.getElementById('diagnosis').scrollIntoView({ behavior: 'smooth' });
+        window.setTimeout(function () { keywordInput.focus(); }, 450);
+      }
+    });
+    const dockObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        dockLinks.forEach(function (link) { link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id); });
+      });
+    }, { rootMargin: '-35% 0px -55%', threshold: 0 });
+    ['top', 'how-it-works', 'diagnosis', 'result-box'].map(function (id) { return document.getElementById(id); }).filter(Boolean).forEach(function (section) { dockObserver.observe(section); });
+
+    const form = document.getElementById('recommend-form');
+    const keywordInput = document.getElementById('keyword');
+    const submitButton = document.getElementById('btn-recommend');
+    const modeInputs = form ? Array.from(form.querySelectorAll('input[name="mode"]')) : [];
+    const selects = form ? Array.from(form.querySelectorAll('select')) : [];
+    const defaultValues = ['성별 선택', '연령대 선택', '피부 타입 선택'];
+    let loadingTimer = null;
+
+    if (form) form.addEventListener('submit', function (event) { event.preventDefault(); getRecommendation(); });
+    [...selects, keywordInput].filter(Boolean).forEach(function (field) {
+      field.addEventListener('input', function () { updateFormStatus(); field.removeAttribute('aria-invalid'); field.closest('.field, .concern-field')?.classList.remove('field-error'); });
+    });
+    modeInputs.forEach(function (input) { input.addEventListener('change', updateModeCopy); });
+    document.querySelectorAll('[data-keyword]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        if (keywordInput) { keywordInput.value = button.dataset.keyword; updateFormStatus(); keywordInput.focus(); }
+        else { window.location.href = "{{ url_for('analysis') }}?keyword=" + encodeURIComponent(button.dataset.keyword) + "#diagnosis"; }
+      });
+    });
+    const resetButton = document.getElementById('reset-form');
+    if (resetButton) resetButton.addEventListener('click', resetForm);
+    const retryButton = document.getElementById('retry-button');
+    if (retryButton) retryButton.addEventListener('click', focusDiagnosis);
+    const retryReviewButton = document.getElementById('retry-button-review');
+    if (retryReviewButton) retryReviewButton.addEventListener('click', focusDiagnosis);
+    document.querySelectorAll('.report-quick-nav a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        if (link.getAttribute('href') === '#detail-guide') document.getElementById('detail-guide').open = true;
+      });
+    });
+
+    function focusDiagnosis() {
+      document.getElementById('diagnosis').scrollIntoView({ behavior: 'smooth' });
+      window.setTimeout(function () { keywordInput.focus(); }, 450);
+    }
+
+    function updateModeCopy() {
+      const mode = form.querySelector('input[name="mode"]:checked').value;
+      const title = submitButton.querySelector('.button-copy strong');
+      const description = submitButton.querySelector('.button-copy small');
+      title.textContent = mode === 'review' ? '스킨케어 리뷰 검색하기' : 'AI 피부 분석 시작하기';
+      description.textContent = mode === 'review' ? '비슷한 고민의 실제 후기 3개를 비교해요' : '입력한 정보를 바탕으로 맞춤 가이드를 만들어요';
+      document.getElementById('mode-help-title').textContent = mode === 'review' ? '리뷰 제품 찾기' : '상담 데이터 분석';
+      document.getElementById('mode-help-text').textContent = mode === 'review' ? '리뷰 검색은 피부 고민 문장이 필요하며 프로필은 선택 사항입니다.' : '프로필은 선택 사항이며 결과에는 메이크업 조언이 포함될 수 있습니다.';
+      document.querySelectorAll('.mode-option').forEach(function (option) { option.classList.toggle('active', option.querySelector('input')?.checked); });
+    }
+
+    function updateFormStatus() {
+      const selectedCount = selects.filter(function (select, index) { return select.value !== defaultValues[index]; }).length;
+      const hasKeyword = keywordInput.value.trim().length > 0;
+      const score = Math.min(100, selectedCount * 20 + (hasKeyword ? 40 : 0));
+      document.getElementById('progress-value').textContent = score + '%';
+      document.getElementById('progress-bar').style.width = score + '%';
+      document.getElementById('char-count').textContent = keywordInput.value.length;
+      document.getElementById('progress-help').textContent = score === 100 ? '분석 준비가 완료됐어요.' : score >= 40 ? '좋아요. 정보를 더하면 분석에 도움이 돼요.' : '항목을 하나 이상 선택해 주세요.';
+      selects.forEach(function (select, index) { select.closest('.select-box').classList.toggle('selected', select.value !== defaultValues[index]); });
+    }
+
+    function resetForm() {
+      form.reset(); hideError(); hideResult(); updateFormStatus(); updateModeCopy(); keywordInput.focus();
+    }
+
+    async function getRecommendation() {
+      const keyword = keywordInput.value.trim();
+      const gender = document.getElementById('gender').value;
+      const age = document.getElementById('age').value;
+      const skinType = document.getElementById('skin_type').value;
+      const mode = form.querySelector('input[name="mode"]:checked').value;
+      const noProfile = gender === '성별 선택' && age === '연령대 선택' && skinType === '피부 타입 선택';
+      if (mode === 'review' && !keyword) { markKeywordError(); showError('리뷰 제품 찾기에는 피부 고민을 입력해 주세요.'); return; }
+      if (!keyword && noProfile) { markKeywordError(); showError('피부 고민을 입력하거나 프로필 항목을 하나 이상 선택해 주세요.'); return; }
+
+      setLoading(true, mode); hideResult(); hideError();
+      try {
+        const response = await fetch("{{ url_for('recommend') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keyword, gender, age, skin_type: skinType, mode }) });
+        const data = await response.json();
+        if (!response.ok) { showError(data.error || '분석 중 오류가 발생했습니다. 다시 시도해 주세요.'); return; }
+        const expertContainer = document.getElementById('expert-mode-container');
+        const reviewContainer = document.getElementById('review-mode-container');
+        const quickNav = document.querySelector('.report-quick-nav');
+        quickNav.classList.toggle('hidden', data.mode === 'review');
+        if (data.mode === 'review') {
+          expertContainer.classList.add('hidden');
+          reviewContainer.classList.remove('hidden');
+          renderReviewResults(data.results || []);
+        } else {
+          expertContainer.classList.remove('hidden');
+          reviewContainer.classList.add('hidden');
+          document.getElementById('profile-text').textContent = data.profile;
+          document.getElementById('response-text').textContent = data.response;
+          document.getElementById('rec-text').textContent = data.rec_ingredients;
+          document.getElementById('avoid-text').textContent = data.avoid_ingredients;
+          renderProductResults(data.product_recommendations || []);
+          renderDetailedGuide(data);
+          updateVisualReport(data, skinType, keyword);
+        }
+        const resultBox = document.getElementById('result-box');
+        resultBox.classList.remove('hidden');
+        window.setTimeout(function () {
+          resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const resultHeading = data.mode === 'review' ? document.getElementById('review-result-title') : document.getElementById('result-title');
+          resultHeading.focus({ preventScroll: true });
+        }, 180);
+      } catch (error) { showError('서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'); }
+      finally { setLoading(false); }
+    }
+
+    function createProductLink(item, className) {
+      const link = document.createElement('a');
+      link.className = className;
+      link.href = item.link;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      return link;
+    }
+
+    function renderProductResults(products) {
+      const box = document.getElementById('expert-product-box');
+      const list = document.getElementById('expert-product-list');
+      list.replaceChildren();
+      box.classList.toggle('hidden', products.length === 0);
+      products.forEach(function (product) {
+        const link = createProductLink(product, 'product-card');
+        const meta = document.createElement('span');
+        meta.textContent = product.category + ' · ' + product.brand;
+        const name = document.createElement('strong');
+        name.textContent = product.name;
+        const action = document.createElement('small');
+        action.textContent = '상품 상세 보기 ↗';
+        link.append(meta, name, action);
+        list.appendChild(link);
+      });
+    }
+
+    function renderReviewResults(results) {
+      const grid = document.getElementById('review-results-grid');
+      grid.replaceChildren();
+      results.forEach(function (result, index) {
+        const card = document.createElement('article');
+        card.className = 'review-product-card';
+        const top = document.createElement('div');
+        top.className = 'review-card-top';
+        const rank = document.createElement('span');
+        rank.className = 'review-rank';
+        rank.textContent = String(index + 1).padStart(2, '0');
+        const meta = document.createElement('div');
+        const category = document.createElement('small');
+        category.textContent = result.category + ' · ' + result.brand;
+        const name = document.createElement('h3');
+        name.textContent = result.name;
+        meta.append(category, name);
+        const score = document.createElement('span');
+        score.className = 'review-score';
+        score.textContent = '문장 유사도 ' + result.match_percent + '%';
+        top.append(rank, meta, score);
+        const quote = document.createElement('p');
+        quote.className = 'review-snippet';
+        quote.textContent = result.review_snippet;
+        const link = createProductLink(result, 'view-product-button');
+        link.textContent = '제품 정보 확인하기 ↗';
+        card.append(top, quote, link);
+        grid.appendChild(card);
+      });
+    }
+
+    function renderDetailedGuide(data) {
+      const sentences = (data.response.match(/[^.!?。]+[.!?。]?/g) || [data.response])
+        .map(function (sentence) { return sentence.trim(); })
+        .filter(Boolean);
+      const groups = [
+        { title: '케어 방향', subtitle: '피부 표현과 제품 선택', icon: '01', words: ['선택', '컬러', '타입', '제형', '베이스', '톤'] },
+        { title: '사용 방법', subtitle: '바르는 순서와 활용법', icon: '02', words: ['바르', '두드리', '사용', '펴', '손가락', '방향', '밀착'] },
+        { title: '주의할 점', subtitle: '자극을 줄이는 체크 포인트', icon: '03', words: ['피하', '자극', '주의', '과도', '부각', '가능성'] },
+        { title: '기대 효과', subtitle: '꾸준한 케어의 목표', icon: '04', words: ['도움', '완화', '연출', '개선', '생기', '안정'] }
+      ];
+      const assigned = groups.map(function () { return []; });
+      sentences.forEach(function (sentence, index) {
+        let bestGroup = -1;
+        let bestScore = 0;
+        groups.forEach(function (group, groupIndex) {
+          const score = group.words.reduce(function (sum, word) { return sum + (sentence.includes(word) ? 1 : 0); }, 0);
+          if (score > bestScore) { bestScore = score; bestGroup = groupIndex; }
+        });
+        if (bestGroup < 0) bestGroup = Math.min(Math.floor(index * groups.length / Math.max(sentences.length, 1)), groups.length - 1);
+        assigned[bestGroup].push(sentence);
+      });
+
+      const container = document.getElementById('guide-sections');
+      container.replaceChildren();
+      let visibleSectionIndex = 0;
+      groups.forEach(function (group, index) {
+        if (!assigned[index].length) return;
+        visibleSectionIndex += 1;
+        const section = document.createElement('section');
+        section.className = 'guide-section-card';
+        const heading = document.createElement('div');
+        heading.className = 'guide-card-heading';
+        const number = document.createElement('span');
+        number.textContent = String(visibleSectionIndex).padStart(2, '0');
+        const titleWrap = document.createElement('div');
+        const title = document.createElement('h4');
+        title.textContent = group.title;
+        const subtitle = document.createElement('p');
+        subtitle.textContent = group.subtitle;
+        titleWrap.append(title, subtitle);
+        heading.append(number, titleWrap);
+        const list = document.createElement('ul');
+        assigned[index].forEach(function (sentence) {
+          const item = document.createElement('li');
+          item.textContent = sentence;
+          list.appendChild(item);
+        });
+        section.append(heading, list);
+        container.appendChild(section);
+      });
+      document.getElementById('guide-rec-ingredient').textContent = data.rec_ingredients;
+      document.getElementById('guide-avoid-ingredient').textContent = data.avoid_ingredients;
+    }
+
+    function updateVisualReport(data, skinType, keyword) {
+      const type = skinType === '피부 타입 선택' ? '정상' : skinType;
+      const visual = document.getElementById('skin-visual');
+      const settings = {
+        '건성': { className: 'skin-dry', label: 'DRY SKIN', focus: '수분과 장벽을 채우는 보습 케어', routine: '보습 성분 레이어링' },
+        '지성': { className: 'skin-oily', label: 'OILY SKIN', focus: '유수분 균형을 맞추는 산뜻한 케어', routine: '가벼운 밸런싱 케어' },
+        '복합성': { className: 'skin-combination', label: 'COMBINATION SKIN', focus: '부위별 균형을 고려한 선택 케어', routine: '부위별 맞춤 레이어링' },
+        '정상': { className: 'skin-normal', label: 'BALANCED SKIN', focus: '건강한 균형을 유지하는 데일리 케어', routine: '피부 균형 유지 케어' }
+      };
+      const current = settings[type] || settings['정상'];
+      visual.className = 'skin-visual ' + current.className;
+      document.getElementById('visual-skin-label').textContent = current.label;
+      document.getElementById('summary-skin-type').textContent = type + ' 피부';
+      document.getElementById('summary-focus').textContent = current.focus;
+      document.getElementById('routine-focus-title').textContent = current.routine;
+      document.getElementById('routine-focus-text').textContent = data.rec_ingredients + ' 성분을 포함한 제품을 소량부터 천천히 적용하세요.';
+
+      const sentences = data.response.match(/[^.!?。]+[.!?。]?/g) || [data.response];
+      document.getElementById('summary-text').textContent = sentences.slice(0, 2).join(' ').trim();
+      const tags = [];
+      if (type !== '정상') tags.push(type);
+      ['건조', '각질', '민감', '홍조', '트러블', '여드름', '모공', '유분'].forEach(function (term) {
+        if (keyword.includes(term) && !tags.includes(term)) tags.push(term);
+      });
+      tags.push('추천 성분 ' + data.rec_ingredients);
+      const tagBox = document.getElementById('concern-tags');
+      tagBox.replaceChildren();
+      tags.slice(0, 4).forEach(function (tag) {
+        const span = document.createElement('span');
+        span.textContent = tag;
+        tagBox.appendChild(span);
+      });
+    }
+
+    function markKeywordError() {
+      keywordInput.setAttribute('aria-invalid', 'true');
+      keywordInput.closest('.concern-field').classList.add('field-error');
+      keywordInput.focus();
+    }
+    function setLoading(isLoading, mode) {
+      const loading = document.getElementById('loading');
+      loading.classList.toggle('hidden', !isLoading);
+      form.setAttribute('aria-busy', String(isLoading));
+      submitButton.disabled = isLoading;
+      submitButton.querySelector('.button-copy strong').textContent = isLoading ? '데이터 분석 중...' : (form.querySelector('input[name="mode"]:checked').value === 'review' ? '스킨케어 리뷰 검색하기' : 'AI 피부 분석 시작하기');
+      window.clearInterval(loadingTimer);
+      if (!isLoading) return;
+      const stages = mode === 'review' ? [
+        ['피부 고민을 정리하고 있어요','입력한 표현에서 핵심 키워드를 찾는 중입니다.','34%'],
+        ['관련 리뷰를 비교하고 있어요','스킨케어 후기의 문장 유사도를 계산하고 있습니다.','68%'],
+        ['제품 결과를 정리하고 있어요','가장 관련성 높은 후기를 읽기 쉽게 구성합니다.','92%']
+      ] : [
+        ['피부 고민을 정리하고 있어요','입력한 표현에서 핵심 키워드를 찾는 중입니다.','34%'],
+        ['프로필과 케어 데이터를 비교해요','피부 타입과 고민의 연관성을 분석하고 있습니다.','68%'],
+        ['맞춤 리포트를 구성하고 있어요','성분과 케어 순서를 읽기 쉽게 정리합니다.','92%']
+      ];
+      let stage = 0;
+      function renderStage() {
+        document.getElementById('loading-title').textContent = stages[stage][0];
+        document.getElementById('loading-description').textContent = stages[stage][1];
+        document.getElementById('loading-progress-bar').style.width = stages[stage][2];
+      }
+      renderStage();
+      loadingTimer = window.setInterval(function () { if (stage < stages.length - 1) { stage += 1; renderStage(); } }, 700);
+    }
+    function showError(message) {
+      document.getElementById('error-text').textContent = message;
+      const box = document.getElementById('error-box');
+      box.classList.remove('hidden');
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function hideError() { document.getElementById('error-box').classList.add('hidden'); }
+    function hideResult() { document.getElementById('result-box').classList.add('hidden'); }
+    if (keywordInput) {
+      const initialParams = new URLSearchParams(window.location.search);
+      const initialKeyword = initialParams.get('keyword');
+      const initialMode = initialParams.get('mode');
+      if (initialKeyword) keywordInput.value = initialKeyword.slice(0, 100);
+      if (initialMode === 'review') {
+        const reviewModeInput = form.querySelector('input[name="mode"][value="review"]:not(:disabled)');
+        if (reviewModeInput) reviewModeInput.checked = true;
+      }
+      updateFormStatus();
+      updateModeCopy();
+    }
+  </script>
+</body>
+</html>

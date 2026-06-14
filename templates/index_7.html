@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="피부 프로필과 고민을 분석해 맞춤 케어 및 성분 가이드를 제공하는 AI 스킨케어 서비스입니다.">
+  <meta name="theme-color" content="#405f4b">
+  <title>SkinScope v7 | 반응형 피부 케어</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const saved = window.localStorage.getItem('skinscope-v7-view');
+      if ((params.get('view') || saved) === 'desktop') {
+        document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=1280');
+      }
+    }());
+  </script>
+  <link rel="icon" href="{{ url_for('static', filename='favicon_7.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style_7.css') }}">
+</head>
+<body class="v7-page">
+  <header id="top" class="topbar">
+    <div class="nav-wrap">
+      <a class="logo" href="{{ url_for('index') }}" aria-label="SkinScope 홈">
+        <span class="logo-symbol" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M16 3C9.4 3 5 8.1 5 14.5 5 22.2 11 27 16 29c5-2 11-6.8 11-14.5C27 8.1 22.6 3 16 3Z"></path><path d="M10.5 16.5c2.1-5.1 6.4-7.2 11-7.5-1 5.9-4.4 9.8-10.2 11.2"></path></svg>
+        </span>
+        <span>Skin<span>Scope</span></span>
+      </a>
+      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="메뉴 열기" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button>
+      <nav id="main-nav" aria-label="주요 메뉴">
+        <a href="{{ url_for('analysis') }}#how-it-works">이용 방법</a>
+        <a href="{{ url_for('analysis') }}#diagnosis">피부 분석</a>
+        {% if current_user %}
+          {% if current_user["role"] == "admin" %}<a href="{{ url_for('admin_users') }}">사용자 관리</a>{% endif %}
+          <span class="member-chip"><span>{{ current_user["name"][0] }}</span>{{ current_user["name"] }}님</span>
+          <form class="logout-form" method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">로그아웃</button></form>
+        {% else %}
+          <a href="{{ url_for('login') }}">로그인</a>
+          <a class="nav-cta" href="{{ url_for('register') }}">회원가입</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash-message {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    <section class="hero-section">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <div class="status-pill"><span></span> AI-POWERED SKIN ANALYSIS</div>
+          <h1>내 피부가 원하는 답을<br><strong>더 쉽고 정확하게.</strong></h1>
+          <p>복잡한 스킨케어 정보 속에서 헤매지 마세요. 현재 피부 상태와 고민을 분석해 나에게 필요한 케어 방향과 성분을 한눈에 정리해 드립니다.</p>
+          <form class="hero-quick-form" action="{{ url_for('analysis') }}#diagnosis" method="get">
+            <label for="hero-keyword">지금 가장 신경 쓰이는 피부 고민</label>
+            <div><input id="hero-keyword" name="keyword" type="text" maxlength="100" placeholder="예: 세안 후 당김과 볼 각질" aria-label="피부 고민 빠른 입력"><button type="submit">바로 분석 <span>→</span></button></div>
+          </form>
+          <p class="hero-assurance"><span>✓</span> 회원가입 없이 분석 가능 <i></i><span>✓</span> 결과 즉시 확인</p>
+          <div class="hero-points">
+            <div><strong>01</strong><span>간단한 프로필 입력</span></div>
+            <div><strong>02</strong><span>고민 기반 AI 분석</span></div>
+            <div><strong>03</strong><span>맞춤 성분 가이드</span></div>
+          </div>
+        </div>
+
+        <figure class="hero-photo-card">
+          <img src="{{ url_for('static', filename='skinscope_hero_v7.png') }}" alt="세럼, 크림, 에센스로 구성된 차분한 스킨케어 제품 이미지" fetchpriority="high">
+          <figcaption>CALM · BALANCE · CARE</figcaption>
+          <div class="hero-photo-badge"><span>✦</span><div><small>PERSONAL CARE</small><strong>고민에서 루틴까지 한 번에</strong></div></div>
+          <div class="hero-photo-score"><strong>3 STEP</strong><span>프로필 · 고민 · 리포트</span></div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="trust-strip" aria-label="SkinScope 서비스 특징">
+      <div class="trust-inner">
+        <p><strong>9,031</strong><span>피부 케어 데이터</span></p>
+        <p><strong>2가지</strong><span>맞춤 분석 방식</span></p>
+        <p><strong>1분</strong><span>평균 입력 시간</span></p>
+        <p><strong>4개</strong><span>스킨케어 카테고리</span></p>
+      </div>
+    </section>
+
+    <section class="service-section" aria-labelledby="service-title">
+      <div class="home-section-heading">
+        <div><span>PERSONAL SKINCARE JOURNEY</span><h2 id="service-title">고민을 적는 순간부터<br>케어 방향이 선명해집니다.</h2></div>
+        <p>막연한 제품 추천이 아니라 현재 상태를 이해하고, 성분과 사용 순서까지 이어지는 스킨케어 경험을 제공합니다.</p>
+      </div>
+      <div class="service-grid">
+        <a class="service-card service-primary" href="{{ url_for('analysis') }}#diagnosis">
+          <span class="service-number">01</span><div class="service-icon">✦</div>
+          <small>AI PERSONAL ANALYSIS</small><h3>맞춤 피부 케어 분석</h3>
+          <p>피부 타입과 고민을 함께 분석해 케어 방향, 추천 성분, 주의 성분과 데일리 루틴을 정리합니다.</p>
+          <b>분석 시작하기 <i>→</i></b>
+        </a>
+        <a class="service-card" href="{{ url_for('analysis') }}?mode=review#diagnosis">
+          <span class="service-number">02</span><div class="service-icon">◎</div>
+          <small>REAL REVIEW SEARCH</small><h3>비슷한 고민의 리뷰 찾기</h3>
+          <p>색조 제품을 제외한 스킨케어 리뷰에서 내 고민과 문장이 유사한 실제 제품 후기를 비교합니다.</p>
+          <b>리뷰로 찾아보기 <i>→</i></b>
+        </a>
+      </div>
+    </section>
+
+    <section class="standard-section" aria-labelledby="principle-title">
+      <div class="standard-heading"><span>OUR STANDARD</span><h2 id="principle-title">결과를 판단할 수 있도록<br>기준까지 함께 보여드립니다.</h2></div>
+      <div class="standard-list">
+        <article><b>01</b><div><strong>스킨케어 범위</strong><p>색조와 디바이스를 제외한 피부 관리 범위로 결과를 제한합니다.</p></div></article>
+        <article><b>02</b><div><strong>추천과 주의 구분</strong><p>추천 성분뿐 아니라 사용 전 확인할 성분과 패치 테스트를 안내합니다.</p></div></article>
+        <article><b>03</b><div><strong>의학적 진단과 구분</strong><p>일반적인 관리 가이드이며 증상이 지속되면 전문 상담을 권합니다.</p></div></article>
+      </div>
+    </section>
+
+    <section id="history" class="insight-section" aria-label="인기 검색어와 이용 기록">
+      <div class="popular-card">
+        <div class="insight-heading"><div><span>TRENDING CONCERNS</span><h2>요즘 많이 찾는 피부 고민</h2></div><p>최근 분석에서 자주 등장한 핵심 키워드예요.</p></div>
+        {% if popular_terms %}
+          <ol class="popular-list">
+            {% for term, count in popular_terms %}
+              <li><button type="button" data-keyword="{{ term }} 피부 고민"><span>{{ loop.index }}</span><strong>{{ term }}</strong><small>{{ count }}회</small><i>→</i></button></li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="insight-empty">아직 집계된 검색어가 없습니다. 첫 피부 고민을 분석해 보세요.</p>
+        {% endif %}
+      </div>
+
+      {% if current_user %}
+        <div class="history-card">
+          <div class="insight-heading"><div><span>MY RECENT HISTORY</span><h2>최근 이용 기록</h2></div><p>{{ current_user["name"] }}님의 최근 분석 5개입니다.</p></div>
+          {% if recent_history %}
+            <div class="personal-history-list">
+              {% for item in recent_history %}
+                <article>
+                  <div class="history-date"><strong>{{ item['created_at']|kst('%m-%d') }}</strong><small>{{ item['created_at']|kst('%H:%M') }}</small></div>
+                  <div class="history-content"><strong>{{ item['keyword'] or '프로필 조건 분석' }}</strong><p>{% if item['gender'] %}{{ item['gender'] }} · {% endif %}{% if item['age'] %}{{ item['age'] }} · {% endif %}{{ item['skin_type'] or '전체 피부' }}</p></div>
+                  <div class="history-result"><span>추천 성분</span><strong>{{ item['recommended_ingredients'] }}</strong></div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="insight-empty">아직 이용 기록이 없습니다. 피부 분석을 시작해 보세요.</p>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="history-card guest-history">
+          <div class="insight-heading"><div><span>MEMBER BENEFIT</span><h2>내 분석 기록을 이어보세요</h2></div></div>
+          <p>로그인하면 피부 프로필과 최근 이용 기록이 저장되어 다음 방문에서도 확인할 수 있습니다.</p>
+          <a href="{{ url_for('login') }}">로그인하고 기록 관리하기 <span>→</span></a>
+        </div>
+      {% endif %}
+    </section>
+
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-main">
+      <div class="footer-brand"><a class="logo footer-logo" href="{{ url_for('index') }}">Skin<span>Scope</span></a><p>데이터로 더 명확해지는<br>나만의 스킨케어 가이드.</p></div>
+      <div class="footer-links"><strong>서비스</strong><a href="{{ url_for('analysis') }}#how-it-works">이용 방법</a><a href="{{ url_for('analysis') }}#diagnosis">피부 분석</a><a href="{{ url_for('analysis') }}?mode=review#diagnosis">리뷰 제품 찾기</a></div>
+      <div class="footer-links"><strong>계정</strong>{% if current_user %}<a href="#history">최근 이용 기록</a>{% if current_user["role"] == "admin" %}<a href="{{ url_for('admin_users') }}">사용자 관리</a>{% endif %}{% else %}<a href="{{ url_for('login') }}">로그인</a><a href="{{ url_for('register') }}">회원가입</a>{% endif %}</div>
+      <div class="footer-notice"><strong>안내</strong><p>SkinScope의 분석 결과는 일반적인 스킨케어 정보이며 의료적 진단을 대신하지 않습니다.</p></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 SkinScope</span><span>AI-based personal skincare guide</span></div>
+  </footer>
+
+  <div class="version-switch-footer">
+    <p id="current-version-label">현재 PC 버전을 보고 있습니다.</p>
+    <button id="version-switch-button" type="button">모바일 버전</button>
+  </div>
+
+  <nav class="mobile-dock" aria-label="모바일 빠른 메뉴">
+    <a class="active" href="#top"><span>⌂</span><small>홈</small></a>
+    <a href="{{ url_for('analysis') }}#how-it-works"><span>?</span><small>이용 방법</small></a>
+    <a href="{{ url_for('analysis') }}#diagnosis"><span>◎</span><small>피부 분석</small></a>
+    {% if current_user %}<a href="{{ url_for('admin_users') if current_user["role"] == "admin" else '#history' }}"><span>◌</span><small>{{ '관리' if current_user["role"] == "admin" else '기록' }}</small></a>{% else %}<a href="{{ url_for('login') }}"><span>◌</span><small>로그인</small></a>{% endif %}
+  </nav>
+
+  <script>
+    const viewParams = new URLSearchParams(window.location.search);
+    const storedView = window.localStorage.getItem('skinscope-v7-view');
+    const requestedView = viewParams.get('view');
+    const embeddedMobile = viewParams.get('embedded') === '1';
+    const automaticView = window.matchMedia('(max-width: 767px)').matches ? 'mobile' : 'desktop';
+    const currentView = requestedView || storedView || automaticView;
+    const versionLabel = document.getElementById('current-version-label');
+    const versionButton = document.getElementById('version-switch-button');
+
+    document.body.dataset.view = currentView;
+    versionLabel.textContent = currentView === 'mobile' ? '현재 모바일 버전을 보고 있습니다.' : '현재 PC 버전을 보고 있습니다.';
+    versionButton.textContent = currentView === 'mobile' ? 'PC 버전' : '모바일 버전';
+
+    if (currentView === 'mobile' && window.innerWidth > 767 && !embeddedMobile && window.top === window.self) {
+      document.body.classList.add('mobile-view-host');
+      const mobileFrame = document.createElement('iframe');
+      const mobileUrl = new URL(window.location.href);
+      mobileUrl.searchParams.set('view', 'mobile');
+      mobileUrl.searchParams.set('embedded', '1');
+      mobileFrame.className = 'mobile-version-frame';
+      mobileFrame.title = 'SkinScope 모바일 버전';
+      mobileFrame.src = mobileUrl.toString();
+      document.body.appendChild(mobileFrame);
+    }
+
+    versionButton.addEventListener('click', function () {
+      const nextView = currentView === 'mobile' ? 'desktop' : 'mobile';
+      window.localStorage.setItem('skinscope-v7-view', nextView);
+      const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set('view', nextView);
+      targetUrl.searchParams.delete('embedded');
+      window.top.location.href = targetUrl.toString();
+    });
+
+    const menuToggle = document.getElementById('menu-toggle');
+    const mainNav = document.getElementById('main-nav');
+    const mobileMenuQuery = window.matchMedia('(max-width: 767px)');
+    mainNav.setAttribute('aria-hidden', String(mobileMenuQuery.matches));
+    mobileMenuQuery.addEventListener('change', function (event) {
+      if (!event.matches) document.body.classList.remove('menu-open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      mainNav.setAttribute('aria-hidden', String(event.matches));
+    });
+    menuToggle.addEventListener('click', function () {
+      const open = document.body.classList.toggle('menu-open');
+      menuToggle.setAttribute('aria-expanded', String(open));
+      menuToggle.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+      mainNav.setAttribute('aria-hidden', String(!open));
+    });
+    mainNav.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        document.body.classList.remove('menu-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        mainNav.setAttribute('aria-hidden', String(mobileMenuQuery.matches));
+      });
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && document.body.classList.contains('menu-open')) {
+        document.body.classList.remove('menu-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        mainNav.setAttribute('aria-hidden', String(mobileMenuQuery.matches));
+        menuToggle.focus();
+      }
+    });
+
+    const dockLinks = Array.from(document.querySelectorAll('.mobile-dock a[href^="#"]'));
+    const dockObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        dockLinks.forEach(function (link) {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+        });
+      });
+    }, { rootMargin: '-35% 0px -55%', threshold: 0 });
+    ['top', 'history'].map(function (id) { return document.getElementById(id); })
+      .filter(Boolean).forEach(function (section) { dockObserver.observe(section); });
+
+    document.querySelectorAll('[data-keyword]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const target = new URL('/analysis', window.location.origin);
+        target.searchParams.set('keyword', button.dataset.keyword);
+        target.hash = 'diagnosis';
+        window.location.href = target.toString();
+      });
+    });
+  </script>
+</body>
+</html>
